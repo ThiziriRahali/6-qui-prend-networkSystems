@@ -13,24 +13,27 @@ void test_Carte() {
     Carte maCarte;
     Carte_Init(&maCarte, 10, 1);
     printf("Valeur Num: %d (attendu: 10)\n", Carte_getValeurNum(&maCarte));
-    printf("Tete Boeuf: %d (attendu: 1)\n", Carte_getTeteBoeuf(&maCarte));
+    printf("Tete Boeuf: %d (attendu: 1)\n", Carte_getValeurTete(&maCarte));
     
     // Test 2: Carte_InitNum
     printf("\n[Test 2] Carte_InitNum\n");
     Carte maCarte2;
     Carte_InitNum(&maCarte2, 50);
     printf("Valeur Num: %d (attendu: 50)\n", Carte_getValeurNum(&maCarte2));
-    printf("Tete Boeuf: %d (attendu: calculé automatiquement)\n", Carte_getTeteBoeuf(&maCarte2));
+    printf("Tete Boeuf: %d (attendu: calculé automatiquement)\n", Carte_getValeurTete(&maCarte2));
+    printf("%s\n", Carte_toString(&maCarte2));
+    printf("%s\n", Carte_toStringCache(&maCarte2));
     
     // Test 3: Cartes avec différentes valeurs
     printf("\n[Test 3] Cartes avec différentes valeurs\n");
     Carte cartes_test[5];
-    int valeurs[] = {5, 15, 25, 35, 104};
+    int valeurs[] = {1, 5, 10, 11, 55};
     for (int i = 0; i < 5; i++) {
         Carte_InitNum(&cartes_test[i], valeurs[i]);
-        printf("Carte %d: Valeur=%d, Têtes=%d\n", i+1, 
-               Carte_getValeurNum(&cartes_test[i]), 
-               Carte_getTeteBoeuf(&cartes_test[i]));
+        //printf("Carte %d: Valeur=%d, Têtes=%d\n", i+1, 
+        //       Carte_getValeurNum(&cartes_test[i]), 
+        //       Carte_getValeurTete(&cartes_test[i]));
+        printf("%s\n", Carte_toString(&cartes_test[i]));
     }
 }
 
@@ -43,10 +46,13 @@ void test_Collection() {
     for (int i = 0; i < 10; i++) {
         Carte_InitNum(&cartes[i], (i + 1) * 10);
     }
-    
+
     Collection maCollection;
     Collection_Init(&maCollection, cartes, 10, 10);
-    printf("Collection créée avec %d cartes (max: %d)\n", 
+
+    printf("%s\n", Collection_toString(&maCollection));
+    printf("Score: %d\n", Collection_getScore(&maCollection));
+    /*printf("Collection créée avec %d cartes (max: %d)\n", 
            Collection_getNbCartes(&maCollection), 
            Collection_getMaxCartes(&maCollection));
     
@@ -63,7 +69,7 @@ void test_Collection() {
     if (carte_specifique != NULL) {
         printf("Carte à l'index 3: Valeur=%d, Têtes=%d\n", 
                Carte_getValeurNum(carte_specifique),
-               Carte_getTeteBoeuf(carte_specifique));
+               Carte_getValeurTete(carte_specifique));
     }
     
     // Test 4: Retirer une carte
@@ -83,7 +89,7 @@ void test_Collection() {
     Collection_ajouterCarte(&maCollection, &nouvelle_carte);
     printf("Nombre de cartes après ajout: %d\n", Collection_getNbCartes(&maCollection));
     printf("Dernière carte ajoutée: Valeur=%d\n", 
-           Carte_getValeurNum(&Collection_getCartes(&maCollection)[Collection_getNbCartes(&maCollection) - 1]));
+           Carte_getValeurNum(&Collection_getCartes(&maCollection)[Collection_getNbCartes(&maCollection) - 1]));*/
 }
 
 int main() {

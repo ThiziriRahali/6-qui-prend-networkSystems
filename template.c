@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "template.h"
-using namespace std;
 
 
 void Template_Init(Template *p, int x, char* y) {
