@@ -1,31 +1,40 @@
 CC := gcc
-CFLAGS := -Wall -Wextra -O2 -g -I.
+CFLAGS := -Wall -Wextra -I. -O2 -g -MMD -MP
 LDFLAGS :=
 
-SRCS_MAIN := main.c Carte.c Collection.c global.c
-OBJS_MAIN := $(SRCS_MAIN:.c=.o)
-TARGET_MAIN := main
+# Sources détectées automatiquement
+SRCS := $(wildcard *.c)
+OBJS := $(SRCS:.c=.o)
+DEPS := $(OBJS:.o=.d)
+TARGET := main
 
-.PHONY: all clean run rebuild
+.PHONY: all clean run debug rebuild
 
 # Par défaut : construit l'exécutable principal
-all: $(TARGET_MAIN)
+all: $(TARGET)
 
 # Cible principale : compile et lie tous les fichiers nécessaires
-$(TARGET_MAIN): $(OBJS_MAIN)
+$(TARGET): $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 # Règle générique : compiler .c en .o
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-# Lancer le programme
-run: $(TARGET_MAIN)
-	./$(TARGET_MAIN)
+# Cible debug (construit avec optimisation désactivée et infos de debug)
+debug: CFLAGS += -g -O0 -DDEBUG
+debug: clean all
 
-# Nettoyer les fichiers objets et exécutables
+# Lancer le programme
+run: $(TARGET)
+	./$(TARGET)
+
+# Nettoyer les fichiers objets, dépendances et exécutables
 clean:
-	rm -f $(OBJS_MAIN) $(TARGET_MAIN)
+	rm -f $(OBJS) $(DEPS) $(TARGET)
 
 # Nettoyer et reconstruire
 rebuild: clean all
+
+# Inclure les fichiers de dépendances si présents
+-include $(DEPS)
