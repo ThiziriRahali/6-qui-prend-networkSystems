@@ -1,6 +1,8 @@
 #include "Carte.h"
 #include "Collection.h"
 #include "global.h"
+#include "Serveur.h"
+#include "GestionnaireClient.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,17 +94,55 @@ void test_Collection() {
            Carte_getValeurNum(&Collection_getCartes(&maCollection)[Collection_getNbCartes(&maCollection) - 1]));*/
 }
 
-int main() {
-    printf("============================\n");
-    printf("  TESTS DES CLASSES\n");
-    printf("============================\n");
+// int main() {
+//     printf("============================\n");
+//     printf("  TESTS DES CLASSES\n");
+//     printf("============================\n");
     
-    test_Carte();
-    test_Collection();
+//     test_Carte();
+//     test_Collection();
     
-    printf("\n============================\n");
-    printf("  FIN DES TESTS\n");
-    printf("============================\n");
+//     printf("\n============================\n");
+//     printf("  FIN DES TESTS\n");
+//     printf("============================\n");
     
+//     return 0;
+// }
+
+int main(int argc, char *argv[])
+{
+    if (argc < 2)
+    {
+        printf("Usage: %s <nom_joueur> [adresse_ip] [port]\n", argv[0]);
+        printf("Exemple: %s Alice 127.0.0.1 5000\n", argv[0]);
+        return 1;
+    }
+
+    const char *nom_joueur = argv[1];
+    const char *adresse_ip = (argc > 2) ? argv[2] : "127.0.0.1";
+    int port = (argc > 3) ? atoi(argv[3]) : 5000;
+
+    printf("=== CLIENT 6 QUI PREND ===\n");
+    printf("Connexion à %s:%d avec le nom '%s'\n\n", adresse_ip, port, nom_joueur);
+
+    int sockfd = initialiser_socket(adresse_ip, port);
+    if (sockfd < 0)
+    {
+        fprintf(stderr, "Erreur: Impossible de se connecter au serveur\n");
+        return 1;
+    }
+
+    Joueur joueur;
+    definir_nom_joueur(&joueur, 1, nom_joueur);
+
+    envoyer_nom_joueur(sockfd, joueur.nom);
+
+    printf("\nConnexion établie avec succès!\n");
+    printf("Appuie sur ENTRÉE pour quitter...\n");
+    getchar();
+
+    close(sockfd);
+    printf("Déconnecté du serveur.\n");
+
     return 0;
 }
