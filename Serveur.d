@@ -1,2 +1,1 @@
-Serveur.o: Serveur.c Serveur.h
-Serveur.h:
+Serveur.o: Serveur.c
