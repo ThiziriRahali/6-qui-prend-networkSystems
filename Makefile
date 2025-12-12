@@ -5,12 +5,13 @@ LDFLAGS  = -pthread
 
 # Fichiers sources communs (utilisés par serveur et client)
 SRC_COMMON = \
-	Carte.c \
-	Collection.c \
-	Joueur.c \
-	GestionnaireJeu.c \
-	global.c \
-	template.c
+    Carte.c \
+    Collection.c \
+    Joueur.c \
+    GestionnaireJeu.c \
+    global.c \
+    template.c \
+    jeu.c
 
 # Fichiers sources spécifiques au serveur
 SRC_SERVER = Serveur.c client_handler.c
