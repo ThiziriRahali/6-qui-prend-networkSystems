@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (strlen(nom_robot) == 0 || strlen(nom_robot) > 31) {
-        fprintf(stderr, "Nom du robot invalide (1-31 caract\u00e8res)\n");
+        fprintf(stderr, "Nom du robot invalide (1-31 caracteres)\n");
         return EXIT_FAILURE;
     }
 
@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in serv_addr;
     char buffer[1024];
 
-    // Création du socket
+    // Creation du socket
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1) {
         perror("socket");
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    printf("\ud83e\udd16 [ROBOT] %s connect\u00e9 au serveur %s:%d\n", nom_robot, server_ip, server_port);
+    printf("[ROBOT] %s connecte au serveur %s:%d\n", nom_robot, server_ip, server_port);
 
     // Envoyer le nom du robot
     ssize_t sent = send(sock, nom_robot, strlen(nom_robot), 0);
@@ -66,28 +66,28 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    printf("\ud83e\udd16 [ROBOT] Nom envoy\u00e9: %s\n", nom_robot);
-    printf("\ud83e\udd16 [ROBOT] En attente de messages du serveur...\n\n");
+    printf("[ROBOT] Nom envoye: %s\n", nom_robot);
+    printf("[ROBOT] En attente de messages du serveur...\n\n");
 
-    // Boucle de r\u00e9ception des messages du serveur
+    // Boucle de reception des messages du serveur
     while (1) {
         ssize_t n = recv(sock, buffer, sizeof(buffer) - 1, 0);
         if (n <= 0) {
-            printf("\ud83e\udd16 [ROBOT] D\u00e9connexion du serveur.\n");
+            printf("[ROBOT] Deconnexion du serveur.\n");
             break;
         }
 
         buffer[n] = '\0';
-        printf("\ud83e\udd16 [ROBOT] Message re\u00e7u: %s", buffer);
+        printf("[ROBOT] Message recu: %s", buffer);
         fflush(stdout);
 
         // TODO: Ici on ajoutera la logique du robot
         // - Parser le message
-        // - D\u00e9terminer quelle carte jouer
-        // - Envoyer la d\u00e9cision au serveur
+        // - Determiner quelle carte jouer
+        // - Envoyer la decision au serveur
     }
 
     close(sock);
-    printf("\ud83e\udd16 [ROBOT] Fin de la connexion.\n");
+    printf("[ROBOT] Fin de la connexion.\n");
     return EXIT_SUCCESS;
 }
