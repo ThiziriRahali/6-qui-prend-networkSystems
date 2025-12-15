@@ -1,10 +1,18 @@
-// client.c : client pour le jeu 6 qui prend
+// client.c : client interactif pour le jeu 6 qui prend
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <pthread.h>
+
+void *thread_reception(void *arg);
+void *thread_envoi(void *arg);
+
+int sock_global = -1;
+int partie_terminee = 0;
+pthread_mutex_t mutex_termine = PTHREAD_MUTEX_INITIALIZER;
 
 int main(int argc, char *argv[]) {
     if (argc != 4) {
@@ -23,20 +31,21 @@ int main(int argc, char *argv[]) {
     }
 
     if (strlen(nom_joueur) == 0 || strlen(nom_joueur) > 31) {
-        fprintf(stderr, "Nom de joueur invalide (1-31 caractères)\n");
+        fprintf(stderr, "Nom de joueur invalide (1-31 caract\u00e8res)\n");
         return EXIT_FAILURE;
     }
 
     int sock;
     struct sockaddr_in serv_addr;
-    char buffer[1024];
 
-    // Création du socket
+    // Cr\u00e9ation du socket
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1) {
         perror("socket");
         return EXIT_FAILURE;
     }
+
+    sock_global = sock;
 
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
@@ -56,7 +65,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    printf("🎮 Connecté au serveur %s:%d\n", server_ip, server_port);
+    printf("🎮 Connect\u00e9 au serveur %s:%d\n", server_ip, server_port);
     printf("Envoi du nom de joueur: %s\n", nom_joueur);
 
     // Envoyer le nom du joueur
@@ -67,13 +76,51 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    printf("En attente du démarrage de la partie...\n\n");
+    printf("En attente du d\u00e9marrage de la partie...\n\n");
 
-    // Boucle de réception des messages du serveur
+    // Cr\u00e9er les threads de r\u00e9ception et d'envoi
+    pthread_t tid_recv, tid_send;
+    
+    if (pthread_create(&tid_recv, NULL, thread_reception, NULL) != 0) {
+        perror("pthread_create recv");
+        close(sock);
+        return EXIT_FAILURE;
+    }
+    
+    if (pthread_create(&tid_send, NULL, thread_envoi, NULL) != 0) {
+        perror("pthread_create send");
+        close(sock);
+        return EXIT_FAILURE;
+    }
+
+    // Attendre la fin des threads
+    pthread_join(tid_recv, NULL);
+    
+    pthread_mutex_lock(&mutex_termine);
+    partie_terminee = 1;
+    pthread_mutex_unlock(&mutex_termine);
+    
+    pthread_cancel(tid_send);  // Annuler le thread d'envoi
+    
+    close(sock);
+    printf("\nFin de la connexion.\n");
+    return EXIT_SUCCESS;
+}
+
+/**
+ * Thread de r\u00e9ception : affiche les messages du serveur
+ */
+void *thread_reception(void *arg) {
+    (void)arg;
+    char buffer[4096];
+    
     while (1) {
-        ssize_t n = recv(sock, buffer, sizeof(buffer) - 1, 0);
+        ssize_t n = recv(sock_global, buffer, sizeof(buffer) - 1, 0);
         if (n <= 0) {
-            printf("Déconnexion du serveur.\n");
+            printf("\nD\u00e9connexion du serveur.\n");
+            pthread_mutex_lock(&mutex_termine);
+            partie_terminee = 1;
+            pthread_mutex_unlock(&mutex_termine);
             break;
         }
 
@@ -81,8 +128,35 @@ int main(int argc, char *argv[]) {
         printf("%s", buffer);
         fflush(stdout);
     }
+    
+    return NULL;
+}
 
-    close(sock);
-    printf("\nFin de la connexion.\n");
-    return EXIT_SUCCESS;
+/**
+ * Thread d'envoi : lit l'entr\u00e9e utilisateur et l'envoie au serveur
+ */
+void *thread_envoi(void *arg) {
+    (void)arg;
+    char input[256];
+    
+    while (1) {
+        pthread_mutex_lock(&mutex_termine);
+        if (partie_terminee) {
+            pthread_mutex_unlock(&mutex_termine);
+            break;
+        }
+        pthread_mutex_unlock(&mutex_termine);
+        
+        // Lire l'entr\u00e9e utilisateur
+        if (fgets(input, sizeof(input), stdin) != NULL) {
+            // Envoyer au serveur
+            ssize_t sent = send(sock_global, input, strlen(input), 0);
+            if (sent == -1) {
+                perror("send");
+                break;
+            }
+        }
+    }
+    
+    return NULL;
 }
