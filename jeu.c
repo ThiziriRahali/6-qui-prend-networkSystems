@@ -134,9 +134,10 @@ int Jeu_trouverMeilleureRangee(TableJeu *table, Carte carte) {
     if (table == NULL) return -1;
     
     int meilleure_rangee = -1;
-    int max_valeur = -1;
+    int min_difference = INT_MAX;
     
-    // Chercher la rangée avec la plus grande dernière carte < carte jouée
+    // RÈGLE: Chercher la rangée avec la PLUS PETITE différence
+    // où carte > dernière_carte
     for (int i = 0; i < NB_RANGEES_JEU; i++) {
         Rangee *rangee = &table->rangees[i];
         
@@ -144,30 +145,48 @@ int Jeu_trouverMeilleureRangee(TableJeu *table, Carte carte) {
         
         Carte derniere = Rangee_derniereCarte(rangee);
         
-        // La carte doit être plus grande que la dernière carte de la rangée
+        // La carte doit être plus grande que la dernière carte
         if (carte.valeurNum > derniere.valeurNum) {
-            // Prendre la rangée avec la plus grande valeur finale < carte
-            if (derniere.valeurNum > max_valeur) {
-                max_valeur = derniere.valeurNum;
+            int difference = carte.valeurNum - derniere.valeurNum;
+            
+            // Prendre la rangée avec la PLUS PETITE différence
+            if (difference < min_difference) {
+                min_difference = difference;
                 meilleure_rangee = i;
             }
         }
     }
     
     // Si aucune rangée ne convient (carte trop petite)
-    if (meilleure_rangee == -1) {
-        // Prendre la rangée avec le moins de têtes de boeuf
-        int min_tetes = INT_MAX;
-        for (int i = 0; i < NB_RANGEES_JEU; i++) {
-            int tetes = Rangee_getTetesBoeuf(&table->rangees[i]);
-            if (tetes < min_tetes) {
-                min_tetes = tetes;
-                meilleure_rangee = i;
-            }
+    // Retourner -1 pour que le joueur choisisse
+    return meilleure_rangee;
+}
+
+/* Demander au joueur de choisir une rangée quand sa carte est trop petite */
+int Jeu_choisirRangee(Joueur *joueur, TableJeu *table) {
+    printf("\n⚠️  %s : Ta carte est trop petite !\n", joueur->nom);
+    printf("Tu dois choisir une rangée à prendre.\n\n");
+    
+    Jeu_afficherTableau(table);
+    
+    int choix = -1;
+    while (choix < 1 || choix > 4) {
+        printf("\nChoisis une rangée (1-4) : ");
+        fflush(stdout);
+        
+        if (scanf("%d", &choix) != 1) {
+            // Nettoyer le buffer
+            while (getchar() != '\n');
+            choix = -1;
+            continue;
+        }
+        
+        if (choix < 1 || choix > 4) {
+            printf("❌ Choix invalide ! Entre un nombre entre 1 et 4.\n");
         }
     }
     
-    return meilleure_rangee;
+    return choix - 1; // Retourner l'index (0-3)
 }
 
 /* ============ PRISE DE RANGÉE ============ */
@@ -177,13 +196,13 @@ void Jeu_prendreRangee(Joueur *joueur, Rangee *rangee) {
 
     int points = Rangee_getTetesBoeuf(rangee);
 
-    printf("❌ %s prend la rangée (%d pts): ", joueur->nom, points);
+    printf("\n❌ %s prend la rangée (%d pts): ", joueur->nom, points);
     
     // Utiliser Collection_toString pour afficher les cartes
     Collection c = Rangee_asCollection(rangee);
     char *cartes_str = Collection_toString(&c);
     if (cartes_str) {
-        printf("%s", cartes_str);
+        printf("\n%s", cartes_str);
         free(cartes_str);
     }
     printf("\n");
@@ -203,7 +222,12 @@ void Jeu_jouerTour(Jeu *jeu) {
     if (jeu == NULL || jeu->tourActuel >= NB_TOURS) return;
     
     jeu->tourActuel++;
-    printf("\n========== 🎯 TOUR %d/%d ==========\n\n", jeu->tourActuel, NB_TOURS);
+    printf("\n\n");
+    printf("══════════════════════════\n");
+    printf("║   🎯 TOUR %d/%d   ║\n", jeu->tourActuel, NB_TOURS);
+    printf("══════════════════════════\n");
+    
+    Jeu_afficherTableau(&jeu->table);
     
     // Tableau pour stocker les cartes jouées par chaque joueur
     typedef struct {
@@ -217,25 +241,52 @@ void Jeu_jouerTour(Jeu *jeu) {
         return;
     }
     
-    // 1. Chaque joueur choisit une carte (stratégie simple: première carte)
+    printf("\n🎴 Sélection des cartes...\n\n");
+    
+    // 1. Chaque joueur choisit une carte
     for (int i = 0; i < jeu->nbJoueurs; i++) {
         Joueur *joueur = &jeu->joueurs[i];
         
-        if (joueur->jeuCartes.nbCartes > 0) {
-            cartes_jouees[i].carte = joueur->jeuCartes.cartes[0];
-            cartes_jouees[i].joueur_id = i;
-            
-            // Afficher la carte jouée avec Carte_toString
-            char *carte_str = Carte_toString(&cartes_jouees[i].carte);
-            printf("🎴 %s joue: %s", joueur->nom, carte_str ? carte_str : "[carte]\n");
-            if (carte_str) free(carte_str);
-            
-            // Retirer la carte de la main (utilise la fonction existante)
-            Joueur_retirerCarte(joueur, 0);
+        if (joueur->jeuCartes.nbCartes == 0) continue;
+        
+        printf("--- %s, c'est ton tour ! ---\n\n", joueur->nom);
+        
+        // Afficher la main du joueur
+        printf("Ta main:\n");
+        char *main_str = Collection_toString(&joueur->jeuCartes);
+        if (main_str) {
+            printf("%s\n", main_str);
+            free(main_str);
         }
+        
+        // Demander au joueur de choisir une carte
+        int choix_carte = -1;
+        while (choix_carte < 1 || choix_carte > joueur->jeuCartes.nbCartes) {
+            printf("\nChoisis une carte (1-%d) : ", joueur->jeuCartes.nbCartes);
+            fflush(stdout);
+            
+            if (scanf("%d", &choix_carte) != 1) {
+                while (getchar() != '\n');
+                choix_carte = -1;
+                continue;
+            }
+            
+            if (choix_carte < 1 || choix_carte > joueur->jeuCartes.nbCartes) {
+                printf("❌ Choix invalide !\n");
+            }
+        }
+        
+        int index = choix_carte - 1;
+        cartes_jouees[i].carte = joueur->jeuCartes.cartes[index];
+        cartes_jouees[i].joueur_id = i;
+        
+        printf("\n✅ Carte sélectionnée et posée face cachée !\n\n");
+        
+        // Retirer la carte de la main
+        Joueur_retirerCarte(joueur, index);
     }
     
-    printf("\n--- Placement des cartes ---\n\n");
+    printf("\n🔄 Révélation et placement des cartes...\n\n");
     
     // 2. Trier les cartes par valeur croissante
     for (int i = 0; i < jeu->nbJoueurs - 1; i++) {
@@ -254,46 +305,50 @@ void Jeu_jouerTour(Jeu *jeu) {
         int joueur_id = cartes_jouees[i].joueur_id;
         Joueur *joueur = &jeu->joueurs[joueur_id];
         
+        // Afficher la carte jouée
+        char *carte_str = Carte_toString(&carte);
+        printf("%s joue:\n", joueur->nom);
+        if (carte_str) {
+            printf("%s\n", carte_str);
+            free(carte_str);
+        }
+        
+        // Trouver la meilleure rangée (automatique)
         int rangee_idx = Jeu_trouverMeilleureRangee(&jeu->table, carte);
         
+        // Si aucune rangée ne convient (carte trop petite)
         if (rangee_idx == -1) {
-            fprintf(stderr, "Erreur: Aucune rangée trouvée\n");
+            rangee_idx = Jeu_choisirRangee(joueur, &jeu->table);
+            Rangee *rangee = &jeu->table.rangees[rangee_idx];
+            Jeu_prendreRangee(joueur, rangee);
+            Rangee_ajouterCarte(rangee, carte);
+            printf("✅ Nouvelle rangée %d commencée\n\n", rangee_idx + 1);
             continue;
         }
         
         Rangee *rangee = &jeu->table.rangees[rangee_idx];
         
-        // Afficher la carte placée avec Carte_toString
-        char *carte_str = Carte_toString(&carte);
-        
-        // Vérifier si la rangée est pleine (5 cartes)
+        // Vérifier si la rangée est pleine (5 cartes = 6ème carte)
         if (rangee->nbCartes >= 5) {
+            printf("\n🚨 6ème carte ! %s doit prendre la rangée !\n", joueur->nom);
             Jeu_prendreRangee(joueur, rangee);
             Rangee_ajouterCarte(rangee, carte);
-            printf("✅ Carte %s placée en début de rangée %d\n", 
-                   carte_str ? carte_str : "[?]", rangee_idx + 1);
+            printf("✅ Nouvelle rangée %d commencée\n\n", rangee_idx + 1);
         } else {
-            Carte derniere = Rangee_derniereCarte(rangee);
-            if (carte.valeurNum < derniere.valeurNum) {
-                Jeu_prendreRangee(joueur, rangee);
-                Rangee_ajouterCarte(rangee, carte);
-                printf("✅ Carte %s placée en début de rangée %d (trop petite)\n", 
-                       carte_str ? carte_str : "[?]", rangee_idx + 1);
-            } else {
-                Rangee_ajouterCarte(rangee, carte);
-                printf("✅ %s place %s sur rangée %d\n", 
-                       joueur->nom, carte_str ? carte_str : "[?]", rangee_idx + 1);
-            }
+            // Placement normal
+            Rangee_ajouterCarte(rangee, carte);
+            printf("✅ Carte placée sur rangée %d\n\n", rangee_idx + 1);
         }
-        
-        if (carte_str) free(carte_str);
     }
     
     free(cartes_jouees);
-    printf("\n--- Fin du tour %d ---\n", jeu->tourActuel);
+    
+    printf("--- Fin du tour %d ---\n", jeu->tourActuel);
+    Jeu_afficherTableau(&jeu->table);
 }
 
 void Jeu_appliquerTour(Jeu *jeu, Carte *cartes_jouees, int *indices_rangees) {
+    // Cette fonction est pour le mode réseau (non utilisée en local)
     if (jeu == NULL || cartes_jouees == NULL) return;
     
     typedef struct {
@@ -326,9 +381,8 @@ void Jeu_appliquerTour(Jeu *jeu, Carte *cartes_jouees, int *indices_rangees) {
         if (rangee_idx == -1) continue;
         
         Rangee *rangee = &jeu->table.rangees[rangee_idx];
-        Carte derniere = Rangee_derniereCarte(rangee);
         
-        if (derniere.valeurNum >= carte.valeurNum || rangee->nbCartes >= 5) {
+        if (rangee->nbCartes >= 5) {
             Jeu_prendreRangee(&jeu->joueurs[joueur_idx], rangee);
         }
         
@@ -371,19 +425,18 @@ void Jeu_afficherTableau(TableJeu *table) {
         printf("Rangée %d [%d 🐮]: ", i + 1, pts);
         
         if (rangee->nbCartes == 0) {
-            printf("(vide)\n");
+            printf("(vide)\n\n");
         } else {
+            printf("\n");
             // Utiliser Collection_toString pour afficher toutes les cartes
             Collection c = Rangee_asCollection(rangee);
             char *rangee_str = Collection_toString(&c);
             if (rangee_str) {
-                printf("%s", rangee_str);
+                printf("%s\n", rangee_str);
                 free(rangee_str);
             }
-            printf("\n");
         }
     }
-    printf("\n");
 }
 
 void Jeu_afficherScores(Jeu *jeu) {
