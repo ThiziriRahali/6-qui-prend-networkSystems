@@ -70,7 +70,7 @@ int Collectionn_isPleine(Collection *p)
     return Collection_getNbCartes(p) >= Collection_getMaxCartes(p);
 }
 
-char* Collection_toString(Collection *p) {
+char* Collection_toString(Collection *p, int afficher_indices) {
     if (p == NULL || Collection_getNbCartes(p) == 0) {
         char *buffer = malloc(50);
         strcpy(buffer, "Collection vide\n");
@@ -114,20 +114,21 @@ char* Collection_toString(Collection *p) {
         strcat(buffer, "\n");
     }
 
-    // Ajouter une ligne avec les indices
-    char indices_line[512];
-    memset(indices_line, 0, sizeof(indices_line));
-    for (int i = 0; i < Collection_getNbCartes(p); i++) {
-        char idx[20];
-        if (i + 1 < 10) {
-            snprintf(idx, sizeof(idx), "   [%d]   ", i + 1);
-        } else {
-            snprintf(idx, sizeof(idx), "  [%d]   ", i + 1);
+    // Ajouter une ligne avec les indices SI demandé
+    if (afficher_indices) {
+        for (int i = 0; i < Collection_getNbCartes(p); i++) {
+            char idx[20];
+            // Largeur d'une carte en ASCII = 9 caractères + 1 espace = 10
+            // Centrer [X] dans 9 caractères
+            if (i + 1 < 10) {
+                snprintf(idx, sizeof(idx), "   [%d]    ", i + 1);
+            } else {
+                snprintf(idx, sizeof(idx), "  [%d]    ", i + 1);
+            }
+            strcat(buffer, idx);
         }
-        strcat(indices_line, idx);
+        strcat(buffer, "\n");
     }
-    strcat(indices_line, "\n");
-    strcat(buffer, indices_line);
 
     return buffer;
 }
