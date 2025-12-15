@@ -20,17 +20,13 @@ SRC_SERVER = Serveur.c client_handler.c server_communication.c
 # Fichiers sources specifiques au client
 SRC_CLIENT = client.c
 
-# Fichiers sources specifiques au robot
-SRC_ROBOT = robot.c robot_strategies.c
-
 # Objets
 OBJ_COMMON = $(SRC_COMMON:.c=.o)
 OBJ_SERVER = $(SRC_SERVER:.c=.o)
 OBJ_CLIENT = $(SRC_CLIENT:.c=.o)
-OBJ_ROBOT = $(SRC_ROBOT:.c=.o)
 
 # Binaires
-TARGETS = serveur client robot
+TARGETS = serveur client
 
 # Cible par defaut
 all: $(TARGETS) scripts
@@ -47,10 +43,6 @@ serveur: $(OBJ_COMMON) $(OBJ_SERVER)
 client: $(OBJ_COMMON) $(OBJ_CLIENT)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
-# Binaire robot
-robot: $(OBJ_COMMON) $(OBJ_ROBOT)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
-
 # Regle generique pour compiler les .c en .o
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -60,7 +52,7 @@ robot: $(OBJ_COMMON) $(OBJ_ROBOT)
 	$(CC) -MM $(CFLAGS) $< > $@
 
 # Inclure les fichiers de dependances
--include $(SRC_COMMON:.c=.d) $(SRC_SERVER:.c=.d) $(SRC_CLIENT:.c=.d) $(SRC_ROBOT:.c=.d)
+-include $(SRC_COMMON:.c=.d) $(SRC_SERVER:.c=.d) $(SRC_CLIENT:.c=.d)
 
 # Cible pour afficher les stats avec le script shell
 stats-shell:
