@@ -334,10 +334,10 @@ void *lancer_partie(void *arg) {
         tour_count++;
         
         // Annoncer le tour au serveur local
-        printf("\n[Tour %d] %s joue...\n", tour_count, joueurs[jeu.joueur_actuel].nom);
+        printf("\n[Tour %d] %s joue...\n", tour_count, joueurs[jeu.tourActuel].nom);
         
         // Envoyer le tour aux clients
-        ServerComm_AnnonceTurn(joueurs[jeu.joueur_actuel].nom, tour_count);
+        ServerComm_AnnonceTurn(joueurs[jeu.tourActuel].nom, tour_count);
         
         // Jouer le tour
         Jeu_jouerTour(&jeu);
