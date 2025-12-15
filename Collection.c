@@ -77,17 +77,17 @@ char* Collection_toString(Collection *p) {
         return buffer;
     }
 
-    size_t buffer_size = Collection_getNbCartes(p) * 300 + 100;
+    size_t buffer_size = Collection_getNbCartes(p) * 300 + 200;
     char *buffer = malloc(buffer_size);
-    memset(buffer, 0, buffer_size);  // Initialiser à 0
+    memset(buffer, 0, buffer_size);
     
     if (buffer == NULL) {
         fprintf(stderr, "Erreur allocation\n");
         exit(EXIT_FAILURE);
     }
 
+    // Afficher les cartes ligne par ligne
     for (int ligne = 0; ligne < 7; ligne++) {
-        
         for (int i = 0; i < Collection_getNbCartes(p); i++) {
             char *carte_str = Carte_toString(Collection_getCarte(p, i));
             
@@ -111,9 +111,23 @@ char* Collection_toString(Collection *p) {
             
             free(carte_str);
         }
-        
         strcat(buffer, "\n");
     }
+
+    // Ajouter une ligne avec les indices
+    char indices_line[512];
+    memset(indices_line, 0, sizeof(indices_line));
+    for (int i = 0; i < Collection_getNbCartes(p); i++) {
+        char idx[20];
+        if (i + 1 < 10) {
+            snprintf(idx, sizeof(idx), "   [%d]   ", i + 1);
+        } else {
+            snprintf(idx, sizeof(idx), "  [%d]   ", i + 1);
+        }
+        strcat(indices_line, idx);
+    }
+    strcat(indices_line, "\n");
+    strcat(buffer, indices_line);
 
     return buffer;
 }
