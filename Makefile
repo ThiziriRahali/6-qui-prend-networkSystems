@@ -37,7 +37,7 @@ all: $(TARGETS) scripts
 
 # Rendre les scripts executables
 scripts:
-	chmod +x stats.sh stats.awk 2>/dev/null || true
+	chmod +x stats.sh 2>/dev/null || true
 
 # Binaire serveur
 serveur: $(OBJ_COMMON) $(OBJ_SERVER)
@@ -62,11 +62,6 @@ robot: $(OBJ_COMMON) $(OBJ_ROBOT)
 # Inclure les fichiers de dependances
 -include $(SRC_COMMON:.c=.d) $(SRC_SERVER:.c=.d) $(SRC_CLIENT:.c=.d) $(SRC_ROBOT:.c=.d)
 
-# Cible pour afficher les stats avec AWK
-stats: jeu.log
-	@echo "=== Statistiques avec AWK ==="
-	gawk -f stats.awk jeu.log
-
 # Cible pour afficher les stats avec le script shell
 stats-shell: jeu.log
 	@./stats.sh jeu.log
@@ -79,4 +74,4 @@ clean:
 distclean: clean
 	rm -f *.o *.d jeu.log
 
-.PHONY: all clean distclean scripts stats stats-shell
+.PHONY: all clean distclean scripts stats-shell
