@@ -62,18 +62,14 @@ robot: $(OBJ_COMMON) $(OBJ_ROBOT)
 # Inclure les fichiers de dependances
 -include $(SRC_COMMON:.c=.d) $(SRC_SERVER:.c=.d) $(SRC_CLIENT:.c=.d) $(SRC_ROBOT:.c=.d)
 
-# Cible pour afficher les stats
-stats:
-	@if [ -f jeu.log ]; then \
-		echo "=== Statistiques avec AWK ==="; \
-		awk -f stats.awk jeu.log; \
-	else \
-		echo "Fichier jeu.log non trouve"; \
-	fi
+# Cible pour afficher les stats avec AWK
+stats: jeu.log
+	@echo "=== Statistiques avec AWK ==="
+	gawk -f stats.awk jeu.log
 
 # Cible pour afficher les stats avec le script shell
-stats-shell:
-	@./stats.sh jeu.log || echo "Erreur: impossibilite de lancer stats.sh"
+stats-shell: jeu.log
+	@./stats.sh jeu.log
 
 # Nettoyage
 clean:
