@@ -29,6 +29,20 @@ static int recevoir_message(int socket, char *buffer, size_t max_len) {
     return 0;
 }
 
+/* Vérifier si une carte peut être posée sur au moins une rangée */
+static int carte_est_jouable(TableJeu *table, Carte carte) {
+    // Une carte est jouable si elle est plus grande qu'au moins une dernière carte
+    for (int i = 0; i < NB_RANGEES_JEU; i++) {
+        if (table->rangees[i].nbCartes > 0) {
+            Carte derniere = Rangee_derniereCarte(&table->rangees[i]);
+            if (carte.valeurNum > derniere.valeurNum) {
+                return 1;  // Jouable
+            }
+        }
+    }
+    return 0;  // Trop petite partout
+}
+
 /* ============ INITIALISATION ============ */
 
 void Rangee_Init(Rangee *rangee) {
@@ -216,7 +230,7 @@ int Jeu_choisirRangee(Joueur *joueur, TableJeu *table) {
     
     // Envoyer l'état du tableau au joueur
     char msg[4096];
-    snprintf(msg, sizeof(msg), "\n\u26a0️  Ta carte est trop petite ! Choisis une rangée à prendre (1-4):\n\n");
+    snprintf(msg, sizeof(msg), "\n⚠️  Ta carte est trop petite ! Choisis une rangée à prendre (1-4):\n\n");
     envoyer_message(joueur->socket, msg);
     
     // Envoyer le tableau
@@ -304,7 +318,7 @@ void Jeu_jouerTour(Jeu *jeu) {
             for (int r = 0; r < NB_RANGEES_JEU; r++) {
                 Rangee *rangee = &jeu->table.rangees[r];
                 int pts = Rangee_getTetesBoeuf(rangee);
-                snprintf(msg, sizeof(msg), "Rangée %d [%d pts]: ", r + 1, pts);
+                snprintf(msg, sizeof(msg), "Rangée %d [%d pts]: \n", r + 1, pts);
                 envoyer_message(jeu->joueurs[i].socket, msg);
                 
                 if (rangee->nbCartes > 0) {
@@ -359,20 +373,61 @@ void Jeu_jouerTour(Jeu *jeu) {
                 free(main_str);
             }
             
-            snprintf(msg, sizeof(msg), "\nChoisis une carte (1-%d): ", joueur->jeuCartes.nbCartes);
-            envoyer_message(joueur->socket, msg);
-            
-            char buffer[32];
-            while (choix_carte < 1 || choix_carte > joueur->jeuCartes.nbCartes) {
-                if (recevoir_message(joueur->socket, buffer, sizeof(buffer)) == 0) {
-                    choix_carte = atoi(buffer);
-                    if (choix_carte < 1 || choix_carte > joueur->jeuCartes.nbCartes) {
-                        snprintf(msg, sizeof(msg), "Choix invalide ! (1-%d): ", joueur->jeuCartes.nbCartes);
+            // Boucle de validation : redemander si la carte n'est pas jouable
+            int carte_valide = 0;
+            while (!carte_valide) {
+                snprintf(msg, sizeof(msg), "\nChoisis une carte (1-%d): ", joueur->jeuCartes.nbCartes);
+                envoyer_message(joueur->socket, msg);
+                
+                char buffer[32];
+                choix_carte = -1;
+                
+                // Valider le choix (dans la plage)
+                while (choix_carte < 1 || choix_carte > joueur->jeuCartes.nbCartes) {
+                    if (recevoir_message(joueur->socket, buffer, sizeof(buffer)) == 0) {
+                        choix_carte = atoi(buffer);
+                        if (choix_carte < 1 || choix_carte > joueur->jeuCartes.nbCartes) {
+                            snprintf(msg, sizeof(msg), "Choix invalide ! (1-%d): ", joueur->jeuCartes.nbCartes);
+                            envoyer_message(joueur->socket, msg);
+                        }
+                    }
+                }
+                choix_carte--;  // Index 0-based
+                
+                // Vérifier si la carte est jouable
+                Carte carte_choisie = joueur->jeuCartes.cartes[choix_carte];
+                if (carte_est_jouable(&jeu->table, carte_choisie)) {
+                    carte_valide = 1;
+                } else {
+                    // Vérifier s'il y a d'autres cartes jouables
+                    int autre_jouable = 0;
+                    for (int c = 0; c < joueur->jeuCartes.nbCartes; c++) {
+                        if (carte_est_jouable(&jeu->table, joueur->jeuCartes.cartes[c])) {
+                            autre_jouable = 1;
+                            break;
+                        }
+                    }
+                    
+                    if (autre_jouable) {
+                        snprintf(msg, sizeof(msg), "\n⚠️  Cette carte (%d) est trop petite et ne peut pas être posée !\n", carte_choisie.valeurNum);
                         envoyer_message(joueur->socket, msg);
+                        snprintf(msg, sizeof(msg), "Tu as d'autres cartes jouables, choisis-en une autre.\n\n");
+                        envoyer_message(joueur->socket, msg);
+                        
+                        // Réafficher la main
+                        char *main_str2 = Collection_toString(&joueur->jeuCartes);
+                        if (main_str2) {
+                            envoyer_message(joueur->socket, main_str2);
+                            envoyer_message(joueur->socket, "\n");
+                            free(main_str2);
+                        }
+                    } else {
+                        // Aucune carte jouable, accepter quand même
+                        carte_valide = 1;
                     }
                 }
             }
-            choix_carte--;  // Index 0-based
+            
             printf("  %s a choisi sa carte\n", joueur->nom);
             
             snprintf(msg, sizeof(msg), "\nCarte posée face cachée ! En attente des autres joueurs...\n");
