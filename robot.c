@@ -5,6 +5,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <time.h>
+#include "robot.h"
 
 int main(int argc, char *argv[]) {
     if (argc != 4) {
@@ -12,6 +14,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Exemple: %s 127.0.0.1 4242 Robot1\n", argv[0]);
         return EXIT_FAILURE;
     }
+
+    srand(time(NULL));  // Initialiser le generateur aleatoire
 
     const char *server_ip = argv[1];
     int server_port = atoi(argv[2]);
@@ -58,19 +62,28 @@ int main(int argc, char *argv[]) {
 
     printf("[ROBOT] %s connecte au serveur %s:%d\n", nom_robot, server_ip, server_port);
 
-    // Envoyer le nom du robot
-    ssize_t sent = send(sock, nom_robot, strlen(nom_robot), 0);
-    if (sent == -1) {
-        perror("send");
+    // Initialiser le robot
+    Robot *robot = Robot_Init(nom_robot, sock);
+    if (!robot) {
+        fprintf(stderr, "Erreur lors de l'initialisation du robot\n");
         close(sock);
         return EXIT_FAILURE;
     }
 
-    printf("[ROBOT] Nom envoye: %s\n", nom_robot);
+    // Envoyer le nom du robot
+    if (Robot_EnvoyerNom(robot) == -1) {
+        fprintf(stderr, "Erreur lors de l'envoi du nom\n");
+        Robot_Destroy(robot);
+        close(sock);
+        return EXIT_FAILURE;
+    }
+
     printf("[ROBOT] En attente de messages du serveur...\n\n");
 
-    // Boucle de reception des messages du serveur
-    while (1) {
+    // Boucle principale du robot
+    int partie_en_cours = 1;
+    while (partie_en_cours) {
+        // Recevoir les messages du serveur
         ssize_t n = recv(sock, buffer, sizeof(buffer) - 1, 0);
         if (n <= 0) {
             printf("[ROBOT] Deconnexion du serveur.\n");
@@ -78,15 +91,19 @@ int main(int argc, char *argv[]) {
         }
 
         buffer[n] = '\0';
-        printf("[ROBOT] Message recu: %s", buffer);
+        printf("[ROBOT] Message du serveur: %s", buffer);
         fflush(stdout);
 
-        // TODO: Ici on ajoutera la logique du robot
-        // - Parser le message
-        // - Determiner quelle carte jouer
-        // - Envoyer la decision au serveur
+        // TODO: Parser le message et determiner les actions
+        // - Si c'est "La partie commence..." : initialiser la logique du jeu
+        // - Si c'est les cartes initiales : appeler Robot_RecevoirMain
+        // - Si c'est le tour du robot : appeler Robot_ChoisirCarte() puis Robot_EnvoyerCarte()
+        // - Si c'est la fin de partie : terminer
+
+        // Pour l'instant, juste afficher et continuer
     }
 
+    Robot_Destroy(robot);
     close(sock);
     printf("[ROBOT] Fin de la connexion.\n");
     return EXIT_SUCCESS;
