@@ -14,6 +14,9 @@ void Joueur_Init(Joueur *p, int x, char* y) {
     p->nom[MAX_CHARS - 1] = '\0';
 
     p->score = x;
+    p->socket = -1;      // Par défaut, pas de socket
+    p->is_bot = 0;       // Par défaut, joueur humain
+    p->id = 0;           // Sera défini par le serveur
 }
 
 void Joueur_Method(Joueur *p, int dx, char* dy) {
