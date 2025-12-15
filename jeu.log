@@ -1,0 +1,30 @@
+
+=== NOUVEAU JEU - Mon Dec 15 19:01:07 2025
+[19:01:20] [CONNEXION] Joueur 'Benoit' depuis 127.0.0.1:52432
+[19:01:37] [CONNEXION] Joueur 'Fabrice' depuis 127.0.0.1:57714
+
+--- DÉBUT DE PARTIE ---
+[PARTIE] Lancement avec 2 joueurs: Benoit, Fabrice
+
+--- FIN DE PARTIE ---
+[GAGNANT] Benoit avec 0 points!
+
+Classement final:
+  1. Benoit: 0 points
+  2. Fabrice: 0 points
+
+
+=== NOUVEAU JEU - Mon Dec 15 19:06:46 2025
+[19:06:56] [CONNEXION] Joueur 'Alice' depuis 127.0.0.1:54880
+[19:07:05] [CONNEXION] Joueur 'Bob' depuis 127.0.0.1:51066
+
+--- DÉBUT DE PARTIE ---
+[PARTIE] Lancement avec 2 joueurs: Alice, Bob
+
+--- FIN DE PARTIE ---
+[GAGNANT] Alice avec 0 points!
+
+Classement final:
+  1. Alice: 0 points
+  2. Bob: 0 points
+
