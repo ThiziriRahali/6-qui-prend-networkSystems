@@ -77,6 +77,9 @@ typedef struct {
 // Initialisation du jeu
 void Jeu_Init(Jeu *jeu, Joueur *joueurs, int nbJoueurs);
 
+// Appliquer un tour complet avec les cartes jouées
+void Jeu_appliquerTour(Jeu *jeu, Carte *cartes_jouees, int *indices_rangees);
+
 // Jouer un tour complet
 void Jeu_jouerTour(Jeu *jeu);
 

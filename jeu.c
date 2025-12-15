@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>  // ← Ajoute cette ligne
+#include <limits.h>
 
 /* ============ INITIALISATION ============ */
 
@@ -103,14 +103,17 @@ int Jeu_trouverMeilleureRangee(TableJeu *table, Carte carte) {
     
     return meilleure_rangee;
 }
+
 static Collection Rangee_asCollection(Rangee *rangee) {
     Collection c;
-    c.cartes = rangee->cartes;          // tableau déjà alloué dans Rangee
+    c.cartes = rangee->cartes;
     c.nbCartes = rangee->nbCartes;
     c.maxCartes = NB_CARTES_MAX_RANGEE;
     return c;
 }
+
 /* ============ PRISE DE RANGÉE ============ */
+
 void Jeu_prendreRangee(Joueur *joueur, Rangee *rangee) {
     if (joueur == NULL || rangee == NULL) return;
 
@@ -132,6 +135,63 @@ int Jeu_calculerPointsRangee(Rangee *rangee) {
 
 /* ============ DÉROULEMENT DU JEU ============ */
 
+void Jeu_appliquerTour(Jeu *jeu, Carte *cartes_jouees, int *indices_rangees) {
+    if (jeu == NULL || cartes_jouees == NULL || indices_rangees == NULL) return;
+    
+    // Créer un tableau de struct (carte, joueur_idx) pour trier
+    typedef struct {
+        Carte carte;
+        int joueur_idx;
+    } CarteTour;
+    
+    CarteTour cartes_tour[jeu->nbJoueurs];
+    for (int i = 0; i < jeu->nbJoueurs; i++) {
+        cartes_tour[i].carte = cartes_jouees[i];
+        cartes_tour[i].joueur_idx = i;
+    }
+    
+    // Trier les cartes par valeur (tri à bulles simple)
+    for (int i = 0; i < jeu->nbJoueurs - 1; i++) {
+        for (int j = i + 1; j < jeu->nbJoueurs; j++) {
+            if (cartes_tour[i].carte.valeurNum > cartes_tour[j].carte.valeurNum) {
+                CarteTour temp = cartes_tour[i];
+                cartes_tour[i] = cartes_tour[j];
+                cartes_tour[j] = temp;
+            }
+        }
+    }
+    
+    // Traiter chaque carte dans l'ordre
+    for (int i = 0; i < jeu->nbJoueurs; i++) {
+        Carte carte = cartes_tour[i].carte;
+        int joueur_idx = cartes_tour[i].joueur_idx;
+        
+        printf("Joueur %s joue la carte [%d | %d]\n", 
+               jeu->joueurs[joueur_idx].nom, carte.valeurNum, carte.teteBoeuf);
+        
+        // Trouver la meilleure rangée
+        int rangee_idx = Jeu_trouverMeilleureRangee(&jeu->table, carte);
+        
+        if (rangee_idx == -1) {
+            printf("  ERROR: Pas de rangée trouvée!\n");
+            continue;
+        }
+        
+        Rangee *rangee = &jeu->table.rangees[rangee_idx];
+        
+        // Si la dernière carte de la rangée >= carte jouée, prendre la rangée
+        Carte derniere = Rangee_derniereCarte(rangee);
+        if (derniere.valeurNum >= carte.valeurNum) {
+            printf("  -> Rangée %d pleine/bloquée. Joueur prend les cartes\n", rangee_idx + 1);
+            Jeu_prendreRangee(&jeu->joueurs[joueur_idx], rangee);
+        }
+        
+        // Placer la carte sur la rangée
+        Rangee_ajouterCarte(rangee, carte);
+        indices_rangees[joueur_idx] = rangee_idx;
+    }
+}
+
 void Jeu_jouerTour(Jeu *jeu) {
     if (jeu == NULL || jeu->tourActuel >= NB_TOURS) return;
     
@@ -152,7 +212,6 @@ int Jeu_estTermine(Jeu *jeu) {
     if (jeu == NULL) return 0;
     return jeu->tourActuel >= NB_TOURS;
 }
-// Helper: construit une Collection "vue" sur la rangée (sans allocation des cartes)
 
 void Jeu_placerCarte(Rangee *rangee, Carte carte) {
     if (rangee == NULL) return;
@@ -164,7 +223,7 @@ void Jeu_placerCarte(Rangee *rangee, Carte carte) {
         free(s);
     }
 }
-// Exemple d’affichage d’une carte (dans un autre contexte)
+
 void afficher_carte(Carte *carte) {
     char *s = Carte_toString(carte);
     if (s) {
@@ -174,6 +233,7 @@ void afficher_carte(Carte *carte) {
 }
 
 /* ============ AFFICHAGE ============ */
+
 void Jeu_afficherTableau(TableJeu *table) {
     if (table == NULL) return;
 
@@ -181,17 +241,18 @@ void Jeu_afficherTableau(TableJeu *table) {
     for (int i = 0; i < NB_RANGEES_JEU; i++) {
         Rangee *rangee = &table->rangees[i];
         Collection c = Rangee_asCollection(rangee);
-        char *s = Collection_toString(&c);   // alloue une chaîne
+        char *s = Collection_toString(&c);
         int pts = Rangee_getTetesBoeuf(rangee);
         printf("Rangée %d (%d cartes, %d pts):\n", i + 1, rangee->nbCartes, pts);
         if (s) {
             printf("%s", s);
-            free(s);                         // libère la chaîne
+            free(s);
         } else {
             printf("(vide)\n");
         }
     }
 }
+
 void Jeu_afficherScores(Jeu *jeu) {
     if (jeu == NULL) return;
     

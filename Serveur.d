@@ -1,1 +1,2 @@
-Serveur.o: Serveur.c Joueur.h Collection.h Carte.h jeu.h logging.h
+Serveur.o: Serveur.c Joueur.h Collection.h Carte.h jeu.h logging.h \
+ server_communication.h

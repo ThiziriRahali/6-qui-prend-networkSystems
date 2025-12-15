@@ -2,6 +2,7 @@
 # Script AWK pour generer des statistiques du jeu.log
 # Usage: awk -f stats.awk jeu.log
 
+
 BEGIN {
     FS = " "
     nb_parties = 0
