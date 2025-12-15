@@ -33,7 +33,11 @@ OBJ_ROBOT = $(SRC_ROBOT:.c=.o)
 TARGETS = serveur client robot
 
 # Cible par defaut
-all: $(TARGETS)
+all: $(TARGETS) scripts
+
+# Rendre les scripts executables
+scripts:
+	chmod +x stats.sh stats.awk 2>/dev/null || true
 
 # Binaire serveur
 serveur: $(OBJ_COMMON) $(OBJ_SERVER)
@@ -58,6 +62,19 @@ robot: $(OBJ_COMMON) $(OBJ_ROBOT)
 # Inclure les fichiers de dependances
 -include $(SRC_COMMON:.c=.d) $(SRC_SERVER:.c=.d) $(SRC_CLIENT:.c=.d) $(SRC_ROBOT:.c=.d)
 
+# Cible pour afficher les stats
+stats:
+	@if [ -f jeu.log ]; then \
+		echo "=== Statistiques avec AWK ==="; \
+		awk -f stats.awk jeu.log; \
+	else \
+		echo "Fichier jeu.log non trouve"; \
+	fi
+
+# Cible pour afficher les stats avec le script shell
+stats-shell:
+	@./stats.sh jeu.log || echo "Erreur: impossibilite de lancer stats.sh"
+
 # Nettoyage
 clean:
 	rm -f *.o *.d $(TARGETS)
@@ -66,4 +83,4 @@ clean:
 distclean: clean
 	rm -f *.o *.d jeu.log
 
-.PHONY: all clean distclean
+.PHONY: all clean distclean scripts stats stats-shell
