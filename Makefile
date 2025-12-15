@@ -63,8 +63,13 @@ robot: $(OBJ_COMMON) $(OBJ_ROBOT)
 -include $(SRC_COMMON:.c=.d) $(SRC_SERVER:.c=.d) $(SRC_CLIENT:.c=.d) $(SRC_ROBOT:.c=.d)
 
 # Cible pour afficher les stats avec le script shell
-stats-shell: jeu.log
-	@./stats.sh jeu.log
+stats-shell:
+	@if [ -f jeu.log ]; then \
+		./stats.sh jeu.log; \
+	else \
+		echo "Erreur: fichier jeu.log non trouve"; \
+		echo "Remarque: Joue quelques parties pour generer jeu.log"; \
+	fi
 
 # Nettoyage
 clean:
