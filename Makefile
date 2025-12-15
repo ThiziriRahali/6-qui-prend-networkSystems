@@ -15,7 +15,7 @@ SRC_COMMON = \
     logging.c
 
 # Fichiers sources specifiques au serveur
-SRC_SERVER = Serveur.c client_handler.c
+SRC_SERVER = Serveur.c client_handler.c server_communication.c
 
 # Fichiers sources specifiques au client
 SRC_CLIENT = client.c
