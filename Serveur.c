@@ -305,6 +305,8 @@ void *lancer_partie(void *arg) {
     Joueur *joueurs = malloc(nb_clients * sizeof(Joueur));
     for (int i = 0; i < nb_clients; i++) {
         Joueur_Init(&joueurs[i], 0, clients_connectes[i]->nom);
+        joueurs[i].socket = clients_connectes[i]->sock;  // ← AJOUTER CETTE LIGNE
+        joueurs[i].is_bot = clients_connectes[i]->is_bot;  // ← AJOUTER CETTE LIGNE
         if (!clients_connectes[i]->is_bot) {
             snprintf(joueurs[i].ip, MAX_CHARS, "%d", clients_connectes[i]->sock);
         } else {

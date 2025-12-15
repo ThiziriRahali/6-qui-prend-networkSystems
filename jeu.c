@@ -475,7 +475,7 @@ void Jeu_afficherTableau(TableJeu *table) {
         Rangee *rangee = &table->rangees[i];
         int pts = Rangee_getTetesBoeuf(rangee);
         
-        printf("Rangée %d [%d 🐮]: ", i + 1, pts);
+        printf("Rangée %d [%d 🐮]: \n", i + 1, pts);
         
         if (rangee->nbCartes == 0) {
             printf("(vide)\n\n");
