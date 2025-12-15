@@ -37,6 +37,18 @@ int main(void) {
     }
 
     printf("Connecté au serveur. Tape un message (\"quit\" pour sortir).\n");
+    // Envoyer le nom du joueur
+    const char *nom = "JoueurAnon"; // ou lire depuis argv/env
+    send(sock, nom, strlen(nom) + 1, 0);
+
+    // Attendre la main initiale envoyée par le serveur
+    ssize_t n = recv(sock, buffer, sizeof(buffer) - 1, 0);
+    if (n > 0) {
+        buffer[n] = '\0';
+        printf("Ta main initiale:\n%s", buffer);
+    } else {
+        printf("Serveur n’a pas envoyé de main initiale.\n");
+    }
 
     while (1) {
         printf("> ");
@@ -66,3 +78,4 @@ int main(void) {
     close(sock);
     return EXIT_SUCCESS;
 }
+   
