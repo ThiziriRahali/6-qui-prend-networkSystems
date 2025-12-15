@@ -92,13 +92,12 @@ void ServerComm_SendBoardState(Jeu *jeu) {
         strcat(buffer, num);
 
         // Ajouter les cartes de la rangee
-        if (jeu->table.rangees[i] != NULL) {
-            for (int j = 0; j < jeu->table.rangees[i]->nb_cartes; j++) {
-                char carte_str[10];
-                snprintf(carte_str, sizeof(carte_str), "%d ", 
-                         jeu->table.rangees[i]->cartes[j].valeurNum);
-                strcat(buffer, carte_str);
-            }
+        // rangees[i] est une struct Rangee (pas un pointeur)
+        for (int j = 0; j < jeu->table.rangees[i].nb_cartes; j++) {
+            char carte_str[10];
+            snprintf(carte_str, sizeof(carte_str), "%d ", 
+                     jeu->table.rangees[i].cartes[j].valeurNum);
+            strcat(buffer, carte_str);
         }
         strcat(buffer, "\n");
         ServerComm_BroadcastMessage(buffer);
