@@ -3,7 +3,7 @@ CC       = gcc
 CFLAGS   = -Wall -Wextra -Wpedantic -std=c11 -g
 LDFLAGS  = -pthread
 
-# Fichiers sources communs (utilisés par serveur et client)
+# Fichiers sources communs (utilises par serveur et client)
 SRC_COMMON = \
     Carte.c \
     Collection.c \
@@ -14,14 +14,14 @@ SRC_COMMON = \
     jeu.c \
     logging.c
 
-# Fichiers sources spécifiques au serveur
+# Fichiers sources specifiques au serveur
 SRC_SERVER = Serveur.c client_handler.c
 
-# Fichiers sources spécifiques au client
+# Fichiers sources specifiques au client
 SRC_CLIENT = client.c
 
-# Fichiers sources spécifiques au robot
-SRC_ROBOT = robot.c
+# Fichiers sources specifiques au robot
+SRC_ROBOT = robot.c robot_strategies.c
 
 # Objets
 OBJ_COMMON = $(SRC_COMMON:.c=.o)
@@ -32,7 +32,7 @@ OBJ_ROBOT = $(SRC_ROBOT:.c=.o)
 # Binaires
 TARGETS = serveur client robot
 
-# Cible par défaut
+# Cible par defaut
 all: $(TARGETS)
 
 # Binaire serveur
@@ -47,15 +47,15 @@ client: $(OBJ_COMMON) $(OBJ_CLIENT)
 robot: $(OBJ_COMMON) $(OBJ_ROBOT)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
-# Règle générique pour compiler les .c en .o
+# Regle generique pour compiler les .c en .o
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Dépendances (génération automatique)
+# Dependencies (generation automatique)
 %.d: %.c
 	$(CC) -MM $(CFLAGS) $< > $@
 
-# Inclure les fichiers de dépendances
+# Inclure les fichiers de dependances
 -include $(SRC_COMMON:.c=.d) $(SRC_SERVER:.c=.d) $(SRC_CLIENT:.c=.d) $(SRC_ROBOT:.c=.d)
 
 # Nettoyage
