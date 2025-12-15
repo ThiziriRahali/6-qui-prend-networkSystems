@@ -11,7 +11,8 @@ SRC_COMMON = \
     GestionnaireJeu.c \
     global.c \
     template.c \
-    jeu.c
+    jeu.c \
+    logging.c
 
 # Fichiers sources spécifiques au serveur
 SRC_SERVER = Serveur.c client_handler.c
@@ -55,7 +56,6 @@ clean:
 
 # Nettoyage complet (+ objets inutiles)
 distclean: clean
-	rm -f *.o *.d
+	rm -f *.o *.d jeu.log
 
 .PHONY: all clean distclean
-
