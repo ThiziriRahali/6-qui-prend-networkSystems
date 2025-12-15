@@ -86,21 +86,19 @@ void ServerComm_SendBoardState(Jeu *jeu) {
 
     // Afficher les 4 rangees
     for (int i = 0; i < 4; i++) {
-        char buffer[512] = "Rangee ";
-        char num[2];
-        snprintf(num, sizeof(num), "%d: ", i + 1);
-        strcat(buffer, num);
+        char buffer[512];
+        snprintf(buffer, sizeof(buffer), "Rangee %d: ", i + 1);
 
         // Ajouter les cartes de la rangee
-        // rangees[i] est une struct Rangee (pas un pointeur)
         for (int j = 0; j < jeu->table.rangees[i].nbCartes; j++) {
             char carte_str[10];
             snprintf(carte_str, sizeof(carte_str), "%d ", 
                      jeu->table.rangees[i].cartes[j].valeurNum);
             strcat(buffer, carte_str);
         }
-        strcat(buffer, "\n");
-        ServerComm_BroadcastMessage(buffer);
+        
+        // Enlever le \n qui etait en trop
+        ServerComm_BroadcastMessage("%s", buffer);
     }
 }
 
