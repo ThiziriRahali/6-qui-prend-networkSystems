@@ -119,6 +119,15 @@ int Rangee_getTetesBoeuf(Rangee *rangee) {
     return total;
 }
 
+/* Helper: convertir une Rangée en Collection pour utiliser Collection_toString */
+static Collection Rangee_asCollection(Rangee *rangee) {
+    Collection c;
+    c.cartes = rangee->cartes;
+    c.nbCartes = rangee->nbCartes;
+    c.maxCartes = NB_CARTES_MAX_RANGEE;
+    return c;
+}
+
 /* ============ PLACEMENT DE CARTES ============ */
 
 int Jeu_trouverMeilleureRangee(TableJeu *table, Carte carte) {
@@ -169,8 +178,13 @@ void Jeu_prendreRangee(Joueur *joueur, Rangee *rangee) {
     int points = Rangee_getTetesBoeuf(rangee);
 
     printf("❌ %s prend la rangée (%d pts): ", joueur->nom, points);
-    for (int i = 0; i < rangee->nbCartes; i++) {
-        printf("%d ", rangee->cartes[i].valeurNum);
+    
+    // Utiliser Collection_toString pour afficher les cartes
+    Collection c = Rangee_asCollection(rangee);
+    char *cartes_str = Collection_toString(&c);
+    if (cartes_str) {
+        printf("%s", cartes_str);
+        free(cartes_str);
     }
     printf("\n");
 
@@ -211,10 +225,13 @@ void Jeu_jouerTour(Jeu *jeu) {
             cartes_jouees[i].carte = joueur->jeuCartes.cartes[0];
             cartes_jouees[i].joueur_id = i;
             
+            // Afficher la carte jouée avec Carte_toString
+            char *carte_str = Carte_toString(&cartes_jouees[i].carte);
+            printf("🎴 %s joue: %s", joueur->nom, carte_str ? carte_str : "[carte]\n");
+            if (carte_str) free(carte_str);
+            
             // Retirer la carte de la main (utilise la fonction existante)
             Joueur_retirerCarte(joueur, 0);
-            
-            printf("🎴 %s joue: %d\n", joueur->nom, cartes_jouees[i].carte.valeurNum);
         }
     }
     
@@ -246,24 +263,30 @@ void Jeu_jouerTour(Jeu *jeu) {
         
         Rangee *rangee = &jeu->table.rangees[rangee_idx];
         
+        // Afficher la carte placée avec Carte_toString
+        char *carte_str = Carte_toString(&carte);
+        
         // Vérifier si la rangée est pleine (5 cartes)
         if (rangee->nbCartes >= 5) {
             Jeu_prendreRangee(joueur, rangee);
             Rangee_ajouterCarte(rangee, carte);
-            printf("✅ Carte %d placée en début de rangée %d\n", carte.valeurNum, rangee_idx + 1);
+            printf("✅ Carte %s placée en début de rangée %d\n", 
+                   carte_str ? carte_str : "[?]", rangee_idx + 1);
         } else {
             Carte derniere = Rangee_derniereCarte(rangee);
             if (carte.valeurNum < derniere.valeurNum) {
                 Jeu_prendreRangee(joueur, rangee);
                 Rangee_ajouterCarte(rangee, carte);
-                printf("✅ Carte %d placée en début de rangée %d (trop petite)\n", 
-                       carte.valeurNum, rangee_idx + 1);
+                printf("✅ Carte %s placée en début de rangée %d (trop petite)\n", 
+                       carte_str ? carte_str : "[?]", rangee_idx + 1);
             } else {
                 Rangee_ajouterCarte(rangee, carte);
-                printf("✅ %s place %d sur rangée %d\n", 
-                       joueur->nom, carte.valeurNum, rangee_idx + 1);
+                printf("✅ %s place %s sur rangée %d\n", 
+                       joueur->nom, carte_str ? carte_str : "[?]", rangee_idx + 1);
             }
         }
+        
+        if (carte_str) free(carte_str);
     }
     
     free(cartes_jouees);
@@ -350,10 +373,12 @@ void Jeu_afficherTableau(TableJeu *table) {
         if (rangee->nbCartes == 0) {
             printf("(vide)\n");
         } else {
-            for (int j = 0; j < rangee->nbCartes; j++) {
-                printf("%d(%d🐮) ", 
-                       rangee->cartes[j].valeurNum, 
-                       rangee->cartes[j].teteBoeuf);
+            // Utiliser Collection_toString pour afficher toutes les cartes
+            Collection c = Rangee_asCollection(rangee);
+            char *rangee_str = Collection_toString(&c);
+            if (rangee_str) {
+                printf("%s", rangee_str);
+                free(rangee_str);
             }
             printf("\n");
         }
