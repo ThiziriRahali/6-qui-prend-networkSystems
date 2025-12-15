@@ -10,7 +10,6 @@ void GestionnaireJeu_Init(GestionnaireJeu *p, char *ip, int port){
     /* Copier l'IP en utilisant la bonne constante et assurer terminaison */
     strncpy(p->ip, ip, MAX_SIZE - 1);
     p->ip[MAX_SIZE - 1] = '\0';  /* sécurité */
-
     /* Allouer dynamiquement le tableau de cartes et la collection
        pour que les pointeurs restent valides après la sortie de la fonction */
     Carte *cartes = (Carte*) malloc(sizeof(Carte) * 104);
