@@ -17,7 +17,7 @@ echo ""
 
 # 1. Nombre total de parties
 echo "[1] PARTIES"
-NB_PARTIES=$(grep -c "=== NOUVEAU JEU" "$LOG_FILE")
+NB_PARTIES=$(grep -c "DEBUT DE PARTIE\|=== NOUVEAU JEU" "$LOG_FILE")
 echo "  Nombre total de parties: $NB_PARTIES"
 echo ""
 
@@ -25,15 +25,19 @@ echo ""
 echo "[2] JOUEURS ET CONNEXIONS"
 echo "  Joueurs connectes:"
 grep "\[CONNEXION\]" "$LOG_FILE" | awk -F"'" '{print $2}' | sort | uniq -c | sort -rn | while read count name; do
-    echo "    - $name: $count connexion(s)"
+    if [ -n "$name" ]; then
+        echo "    - $name: $count connexion(s)"
+    fi
 done
 echo ""
 
 # 3. Gagnants
 echo "[3] GAGNANTS"
 echo "  Top des gagnants:"
-grep "\[GAGNANT\]" "$LOG_FILE" | awk -F"'" '{print $2}' | sort | uniq -c | sort -rn | while read count name; do
-    echo "    - $name: $count victoire(s)"
+grep "\[GAGNANT\]" "$LOG_FILE" | awk '{print $2}' | sort | uniq -c | sort -rn | while read count name; do
+    if [ -n "$name" ] && [ "$name" != "avec" ]; then
+        echo "    - $name: $count victoire(s)"
+    fi
 done
 echo ""
 
@@ -42,7 +46,7 @@ echo "[4] SCORES"
 echo "  Analyse des points:"
 
 # Extraire tous les scores finaux
-grep "\[GAGNANT\]" "$LOG_FILE" | awk '{print $NF}' | sed 's/!$//' | awk '
+grep "\[GAGNANT\]" "$LOG_FILE" | awk '{print $(NF-1)}' | grep -E '^[0-9]+$' | awk '
     BEGIN { sum = 0; count = 0; min = 999999; max = 0 }
     {
         sum += $1
@@ -56,6 +60,8 @@ grep "\[GAGNANT\]" "$LOG_FILE" | awk '{print $NF}' | sed 's/!$//' | awk '
             printf("    Score moyen du gagnant: %.1f\n", avg)
             printf("    Score min: %d\n", min)
             printf("    Score max: %d\n", max)
+        } else {
+            printf("    Aucun score valide trouve\n")
         }
     }
 '
@@ -66,9 +72,9 @@ echo "[5] TOURS"
 echo "  Analyse des tours:"
 
 awk '
-    /--- DEBUT DE PARTIE ---/ { in_game = 1; tour_count = 0; next }
-    /--- FIN DE PARTIE ---/ { in_game = 0; if (tour_count > 0) print tour_count; next }
-    in_game && /^\[.*\] \[TOUR / { tour_count++ }
+    /DEBUT DE PARTIE|=== NOUVEAU JEU/ { in_game = 1; tour_count = 0; next }
+    /FIN DE PARTIE|=== FIN DU JEU/ { in_game = 0; if (tour_count > 0) print tour_count; next }
+    in_game && /\[TOUR/ { tour_count++ }
 ' "$LOG_FILE" | awk '
     BEGIN { sum = 0; count = 0; min = 999999; max = 0 }
     {
@@ -90,8 +96,8 @@ echo ""
 
 # 6. Temps des parties
 echo "[6] CHRONOLOGIE"
-echo "  Premiere partie: $(grep "DEBUT DE PARTIE" "$LOG_FILE" | head -1 | awk '{print $2, $3}')"
-echo "  Derniere partie: $(grep "DEBUT DE PARTIE" "$LOG_FILE" | tail -1 | awk '{print $2, $3}')"
+echo "  Premiere partie: $(grep "DEBUT DE PARTIE\|=== NOUVEAU JEU" "$LOG_FILE" | head -1 | awk '{print $1, $2}')"
+echo "  Derniere partie: $(grep "DEBUT DE PARTIE\|=== NOUVEAU JEU" "$LOG_FILE" | tail -1 | awk '{print $1, $2}')"
 echo ""
 
 # 7. Bots vs Humains
@@ -105,16 +111,13 @@ echo ""
 # 8. Statistiques detaillees par joueur (optionnel)
 echo "[8] DETAILS PAR JOUEUR"
 echo "  Victoires et scores finaux:"
-
-awk '
-    /\[GAGNANT\]/ { 
-        match($0, /Gagnant: ([^ ]+)/, arr)
-        winner = arr[1]
-        match($0, /([0-9]+) points!/, arr2)
-        score = arr2[1]
-        printf "    %s: 1 victoire (%d points)\n", winner, score
+grep "\[GAGNANT\]" "$LOG_FILE" | awk '
+    {
+        winner = $2
+        score = $(NF-1)
+        printf("    %s: %s points\n", winner, score)
     }
-' "$LOG_FILE" | sort | uniq
+' | sort | uniq
 
 echo ""
 echo "============================================"
