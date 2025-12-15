@@ -4,7 +4,7 @@
 #include <string.h>
 #include <limits.h>
 #include <time.h>
-#include <unistd.h>  // Pour getpid()
+#include <unistd.h>
 
 /* ============ INITIALISATION ============ */
 
@@ -26,7 +26,7 @@ void Jeu_Init(Jeu *jeu, Joueur *joueurs, int nbJoueurs) {
         Rangee_Init(&jeu->table.rangees[i]);
     }
     
-    // Créer et mélanger le deck de 104 cartes
+    // Créer le deck de 104 cartes
     Carte *deck_cartes = malloc(DECK_TOTAL * sizeof(Carte));
     if (!deck_cartes) {
         fprintf(stderr, "Erreur allocation deck\n");
@@ -35,7 +35,7 @@ void Jeu_Init(Jeu *jeu, Joueur *joueurs, int nbJoueurs) {
     
     // Initialiser le deck avec les cartes 1-104
     for (int i = 0; i < DECK_TOTAL; i++) {
-        deck_cartes[i] = Carte_nouvelle(i + 1);
+        Carte_InitNum(&deck_cartes[i], i + 1);
     }
     
     // Mélanger le deck (Fisher-Yates)
@@ -50,18 +50,27 @@ void Jeu_Init(Jeu *jeu, Joueur *joueurs, int nbJoueurs) {
     // Distribuer 10 cartes à chaque joueur
     int carte_index = 0;
     for (int j = 0; j < nbJoueurs; j++) {
-        joueurs[j].nbCartes = NB_CARTES_PAR_JOUEUR;
+        // Allouer l'espace pour les cartes du joueur
+        joueurs[j].jeuCartes.cartes = malloc(NB_CARTES_PAR_JOUEUR * sizeof(Carte));
+        if (!joueurs[j].jeuCartes.cartes) {
+            fprintf(stderr, "Erreur allocation cartes joueur %d\n", j);
+            continue;
+        }
+        
+        joueurs[j].jeuCartes.nbCartes = NB_CARTES_PAR_JOUEUR;
+        joueurs[j].jeuCartes.maxCartes = NB_CARTES_PAR_JOUEUR;
+        
         for (int c = 0; c < NB_CARTES_PAR_JOUEUR; c++) {
-            joueurs[j].main[c] = deck_cartes[carte_index++];
+            joueurs[j].jeuCartes.cartes[c] = deck_cartes[carte_index++];
         }
         
         // Trier la main du joueur par valeur croissante
-        for (int a = 0; a < joueurs[j].nbCartes - 1; a++) {
-            for (int b = a + 1; b < joueurs[j].nbCartes; b++) {
-                if (joueurs[j].main[a].valeurNum > joueurs[j].main[b].valeurNum) {
-                    Carte temp = joueurs[j].main[a];
-                    joueurs[j].main[a] = joueurs[j].main[b];
-                    joueurs[j].main[b] = temp;
+        for (int a = 0; a < joueurs[j].jeuCartes.nbCartes - 1; a++) {
+            for (int b = a + 1; b < joueurs[j].jeuCartes.nbCartes; b++) {
+                if (joueurs[j].jeuCartes.cartes[a].valeurNum > joueurs[j].jeuCartes.cartes[b].valeurNum) {
+                    Carte temp = joueurs[j].jeuCartes.cartes[a];
+                    joueurs[j].jeuCartes.cartes[a] = joueurs[j].jeuCartes.cartes[b];
+                    joueurs[j].jeuCartes.cartes[b] = temp;
                 }
             }
         }
@@ -93,7 +102,8 @@ void Rangee_ajouterCarte(Rangee *rangee, Carte carte) {
 
 Carte Rangee_derniereCarte(Rangee *rangee) {
     if (rangee == NULL || rangee->nbCartes == 0) {
-        Carte carte_nulle = {0, 0};
+        Carte carte_nulle;
+        Carte_Init(&carte_nulle, 0, 0);
         return carte_nulle;
     }
     return rangee->cartes[rangee->nbCartes - 1];
@@ -151,14 +161,6 @@ int Jeu_trouverMeilleureRangee(TableJeu *table, Carte carte) {
     return meilleure_rangee;
 }
 
-static Collection Rangee_asCollection(Rangee *rangee) {
-    Collection c;
-    c.cartes = rangee->cartes;
-    c.nbCartes = rangee->nbCartes;
-    c.maxCartes = NB_CARTES_MAX_RANGEE;
-    return c;
-}
-
 /* ============ PRISE DE RANGÉE ============ */
 
 void Jeu_prendreRangee(Joueur *joueur, Rangee *rangee) {
@@ -205,15 +207,12 @@ void Jeu_jouerTour(Jeu *jeu) {
     for (int i = 0; i < jeu->nbJoueurs; i++) {
         Joueur *joueur = &jeu->joueurs[i];
         
-        if (joueur->nbCartes > 0) {
-            cartes_jouees[i].carte = joueur->main[0];
+        if (joueur->jeuCartes.nbCartes > 0) {
+            cartes_jouees[i].carte = joueur->jeuCartes.cartes[0];
             cartes_jouees[i].joueur_id = i;
             
-            // Retirer la carte de la main
-            for (int j = 0; j < joueur->nbCartes - 1; j++) {
-                joueur->main[j] = joueur->main[j + 1];
-            }
-            joueur->nbCartes--;
+            // Retirer la carte de la main (utilise la fonction existante)
+            Joueur_retirerCarte(joueur, 0);
             
             printf("🎴 %s joue: %d\n", joueur->nom, cartes_jouees[i].carte.valeurNum);
         }
