@@ -113,13 +113,13 @@ void Jeu_Init(Jeu *jeu, Joueur *joueurs, int nbJoueurs) {
             }
         }
         
-        // Envoyer la main au joueur humain
+        // Envoyer la main au joueur humain (AVEC indices)
         if (!joueurs[j].is_bot) {
             char msg[2048];
             snprintf(msg, sizeof(msg), "\n=== Ta main ===\n");
             envoyer_message(joueurs[j].socket, msg);
             
-            char *main_str = Collection_toString(&joueurs[j].jeuCartes);
+            char *main_str = Collection_toString(&joueurs[j].jeuCartes, 1);  // 1 = afficher indices
             if (main_str) {
                 envoyer_message(joueurs[j].socket, main_str);
                 envoyer_message(joueurs[j].socket, "\n");
@@ -233,7 +233,7 @@ int Jeu_choisirRangee(Joueur *joueur, TableJeu *table) {
     snprintf(msg, sizeof(msg), "\n⚠️  Ta carte est trop petite ! Choisis une rangée à prendre (1-4):\n\n");
     envoyer_message(joueur->socket, msg);
     
-    // Envoyer le tableau
+    // Envoyer le tableau (SANS indices)
     for (int i = 0; i < NB_RANGEES_JEU; i++) {
         Rangee *rangee = &table->rangees[i];
         int pts = Rangee_getTetesBoeuf(rangee);
@@ -242,7 +242,7 @@ int Jeu_choisirRangee(Joueur *joueur, TableJeu *table) {
         
         if (rangee->nbCartes > 0) {
             Collection c = Rangee_asCollection(rangee);
-            char *rangee_str = Collection_toString(&c);
+            char *rangee_str = Collection_toString(&c, 0);  // 0 = PAS d'indices
             if (rangee_str) {
                 envoyer_message(joueur->socket, rangee_str);
                 envoyer_message(joueur->socket, "\n");
@@ -307,7 +307,7 @@ void Jeu_jouerTour(Jeu *jeu) {
     printf("║   🎯 TOUR %d/%d   ║\n", jeu->tourActuel, NB_TOURS);
     printf("══════════════════════════\n");
     
-    // Envoyer l'état du tableau à tous les joueurs
+    // Envoyer l'état du tableau à tous les joueurs (SANS indices)
     char msg[4096];
     for (int i = 0; i < jeu->nbJoueurs; i++) {
         if (!jeu->joueurs[i].is_bot) {
@@ -323,7 +323,7 @@ void Jeu_jouerTour(Jeu *jeu) {
                 
                 if (rangee->nbCartes > 0) {
                     Collection c = Rangee_asCollection(rangee);
-                    char *rangee_str = Collection_toString(&c);
+                    char *rangee_str = Collection_toString(&c, 0);  // 0 = PAS d'indices
                     if (rangee_str) {
                         envoyer_message(jeu->joueurs[i].socket, rangee_str);
                         envoyer_message(jeu->joueurs[i].socket, "\n");
@@ -362,11 +362,11 @@ void Jeu_jouerTour(Jeu *jeu) {
             choix_carte = 0;
             printf("  Bot %s joue sa carte\n", joueur->nom);
         } else {
-            // Humain: demander via le réseau
+            // Humain: demander via le réseau (AVEC indices)
             snprintf(msg, sizeof(msg), "\n=== C'est ton tour %s ! ===\n\nTa main:\n", joueur->nom);
             envoyer_message(joueur->socket, msg);
             
-            char *main_str = Collection_toString(&joueur->jeuCartes);
+            char *main_str = Collection_toString(&joueur->jeuCartes, 1);  // 1 = afficher indices
             if (main_str) {
                 envoyer_message(joueur->socket, main_str);
                 envoyer_message(joueur->socket, "\n");
@@ -414,8 +414,8 @@ void Jeu_jouerTour(Jeu *jeu) {
                         snprintf(msg, sizeof(msg), "Tu as d'autres cartes jouables, choisis-en une autre.\n\n");
                         envoyer_message(joueur->socket, msg);
                         
-                        // Réafficher la main
-                        char *main_str2 = Collection_toString(&joueur->jeuCartes);
+                        // Réafficher la main (AVEC indices)
+                        char *main_str2 = Collection_toString(&joueur->jeuCartes, 1);  // 1 = afficher indices
                         if (main_str2) {
                             envoyer_message(joueur->socket, main_str2);
                             envoyer_message(joueur->socket, "\n");
@@ -537,7 +537,7 @@ void Jeu_afficherTableau(TableJeu *table) {
         } else {
             printf("\n");
             Collection c = Rangee_asCollection(rangee);
-            char *rangee_str = Collection_toString(&c);
+            char *rangee_str = Collection_toString(&c, 0);  // 0 = PAS d'indices
             if (rangee_str) {
                 printf("%s\n", rangee_str);
                 free(rangee_str);
