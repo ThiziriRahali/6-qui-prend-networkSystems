@@ -34,7 +34,7 @@ void Joueur_Method(Joueur *p, int dx, char* dy) {
 void Joueur_AfficherCartes(Joueur *p) {
     if (p == NULL) return;
 
-    char *s = Collection_toString(&p->jeuCartes);
+    char *s = Collection_toString(&p->jeuCartes, 1);  // 1 = afficher indices
     if (s == NULL) return;
 
     printf("Cartes de %s :\n%s", p->nom, s);
