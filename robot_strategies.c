@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
+#include <sys/socket.h>
 #include "robot.h"
 
 /**
@@ -76,12 +78,12 @@ int Robot_Strategie_PlusPetite(Robot *robot) {
     if (!robot || robot->nb_cartes <= 0) return -1;
 
     int indice_min = 0;
-    int valeur_min = robot->main[0].valeur;
+    int valeur_min = robot->main[0].valeurNum;
 
     // Trouver la carte avec la plus petite valeur
     for (int i = 1; i < robot->nb_cartes; i++) {
-        if (robot->main[i].valeur < valeur_min) {
-            valeur_min = robot->main[i].valeur;
+        if (robot->main[i].valeurNum < valeur_min) {
+            valeur_min = robot->main[i].valeurNum;
             indice_min = i;
         }
     }
@@ -124,7 +126,7 @@ int Robot_EnvoyerCarte(Robot *robot, int indice_carte) {
 
     Carte carte = robot->main[indice_carte];
     char buffer[256];
-    snprintf(buffer, sizeof(buffer), "%d", carte.valeur);
+    snprintf(buffer, sizeof(buffer), "%d", carte.valeurNum);
 
     ssize_t sent = send(robot->socket, buffer, strlen(buffer), 0);
     if (sent == -1) {
@@ -132,7 +134,7 @@ int Robot_EnvoyerCarte(Robot *robot, int indice_carte) {
         return -1;
     }
 
-    printf("[ROBOT] Carte jouee: #%d (valeur %d)\n", indice_carte, carte.valeur);
+    printf("[ROBOT] Carte jouee: #%d (valeur %d)\n", indice_carte, carte.valeurNum);
     Robot_RetirerCarte(robot, indice_carte);
     return 0;
 }
@@ -171,7 +173,7 @@ void Robot_AfficherMain(Robot *robot) {
 
     printf("[ROBOT] Main de %s (%d cartes): ", robot->nom, robot->nb_cartes);
     for (int i = 0; i < robot->nb_cartes; i++) {
-        printf("%d ", robot->main[i].valeur);
+        printf("%d ", robot->main[i].valeurNum);
     }
     printf("\n");
 }
