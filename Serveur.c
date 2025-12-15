@@ -1,101 +1,3 @@
-// // server.c : serveur de jeu très simple (TCP, IPv4)
-
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <string.h>
-// #include <unistd.h>
-// #include <errno.h>
-// #include <arpa/inet.h>
-// #include <pthread.h>
-
-// #define SERVER_PORT 4242
-// #define BACKLOG 10       // connexions en attente
-// #define MAX_NAME_LEN 32
-
-// // Prototype du gestionnaire de client
-// void *client_handler(void *arg);
-
-// typedef struct {
-//     int sock;                    // socket client
-//     struct sockaddr_in addr;     // adresse client
-// } client_t;
-
-// int main(void) {
-//     int server_sock;
-//     struct sockaddr_in server_addr;
-
-//     // 1) Création du socket
-//     server_sock = socket(AF_INET, SOCK_STREAM, 0);
-//     if (server_sock == -1) {
-//         perror("socket");
-//         return EXIT_FAILURE;
-//     }
-
-//     // Option pour réutiliser rapidement le port
-//     int opt = 1;
-//     setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-
-//     // 2) Remplissage de la structure d'adresse du serveur
-//     memset(&server_addr, 0, sizeof(server_addr));
-//     server_addr.sin_family = AF_INET;
-//     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);   // toutes les interfaces
-//     server_addr.sin_port = htons(SERVER_PORT);
-
-//     // 3) Bind
-//     if (bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
-//         perror("bind");
-//         close(server_sock);
-//         return EXIT_FAILURE;
-//     }
-
-//     // 4) Listen
-//     if (listen(server_sock, BACKLOG) == -1) {
-//         perror("listen");
-//         close(server_sock);
-//         return EXIT_FAILURE;
-//     }
-
-//     printf("Serveur lancé sur le port %d\n", SERVER_PORT);
-
-//     // 5) Boucle principale d'acceptation
-//     while (1) {
-//         client_t *client = malloc(sizeof(client_t));
-//         if (!client) {
-//             perror("malloc");
-//             continue;
-//         }
-
-//         socklen_t addrlen = sizeof(client->addr);
-//         client->sock = accept(server_sock,
-//                               (struct sockaddr *)&client->addr,
-//                               &addrlen);
-//         if (client->sock == -1) {
-//             perror("accept");
-//             free(client);
-//             continue;
-//         }
-
-//         char ipstr[INET_ADDRSTRLEN];
-//         inet_ntop(AF_INET, &client->addr.sin_addr, ipstr, sizeof(ipstr));
-//         printf("Nouveau client connecté depuis %s:%d\n",
-//                ipstr, ntohs(client->addr.sin_port));
-
-//         // 6) Création d’un thread pour gérer ce client
-//         pthread_t tid;
-//         if (pthread_create(&tid, NULL, client_handler, client) != 0) {
-//             perror("pthread_create");
-//             close(client->sock);
-//             free(client);
-//             continue;
-//         }
-
-//         // Le thread s’auto-détache, pas besoin de join
-//         pthread_detach(tid);
-//     }
-
-//     close(server_sock);
-//     return EXIT_SUCCESS;
-// }
 // Serveur.c : serveur de jeu 6 qui prend
 
 #include <stdio.h>
@@ -107,8 +9,8 @@
 #include <pthread.h>
 #include "Joueur.h"  // ← Doit être AVANT jeu.h pour avoir MAX_CHARS
 #include "jeu.h"
+#include "logging.h"
 
-#define SERVER_PORT 4242
 #define BACKLOG 10
 #define MAX_NAME_LEN 32
 #define MIN_JOUEURS 2
@@ -130,8 +32,30 @@ int nb_clients = 0;
 int partie_en_cours = 0;
 pthread_mutex_t mutex_clients = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond_min_joueurs = PTHREAD_COND_INITIALIZER;
+Logger *g_logger = NULL;
 
-int main(void) {
+int main(int argc, char *argv[]) {
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s <adresse_ip> <port>\n", argv[0]);
+        fprintf(stderr, "Exemple: %s 127.0.0.1 4242\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    const char *ip_str = argv[1];
+    int port = atoi(argv[2]);
+
+    if (port <= 0 || port > 65535) {
+        fprintf(stderr, "Port invalide: %d\n", port);
+        return EXIT_FAILURE;
+    }
+
+    // Initialiser le logger
+    g_logger = Logger_Init();
+    if (!g_logger) {
+        fprintf(stderr, "Impossible d'initialiser le logger\n");
+        return EXIT_FAILURE;
+    }
+
     int server_sock;
     struct sockaddr_in server_addr;
 
@@ -139,6 +63,7 @@ int main(void) {
     server_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (server_sock == -1) {
         perror("socket");
+        Logger_Close(g_logger);
         return EXIT_FAILURE;
     }
 
@@ -149,13 +74,21 @@ int main(void) {
     // 2) Remplissage de la structure d'adresse du serveur
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_addr.sin_port = htons(SERVER_PORT);
+    server_addr.sin_port = htons(port);
+    
+    // Conversion de l'adresse IP
+    if (inet_pton(AF_INET, ip_str, &server_addr.sin_addr) <= 0) {
+        perror("inet_pton");
+        close(server_sock);
+        Logger_Close(g_logger);
+        return EXIT_FAILURE;
+    }
 
     // 3) Bind
     if (bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
         perror("bind");
         close(server_sock);
+        Logger_Close(g_logger);
         return EXIT_FAILURE;
     }
 
@@ -163,10 +96,11 @@ int main(void) {
     if (listen(server_sock, BACKLOG) == -1) {
         perror("listen");
         close(server_sock);
+        Logger_Close(g_logger);
         return EXIT_FAILURE;
     }
 
-    printf("Serveur lancé sur le port %d\n", SERVER_PORT);
+    printf("🎮 Serveur lancé sur %s:%d\n", ip_str, port);
     printf("En attente de %d joueurs minimum...\n", MIN_JOUEURS);
 
     // 5) Boucle principale d'acceptation
@@ -191,11 +125,24 @@ int main(void) {
         inet_ntop(AF_INET, &client->addr.sin_addr, ipstr, sizeof(ipstr));
         
         // Recevoir le nom du joueur
-        recv(client->sock, client->nom, MAX_NAME_LEN - 1, 0);
-        client->nom[MAX_NAME_LEN - 1] = '\0';
+        ssize_t n = recv(client->sock, client->nom, MAX_NAME_LEN - 1, 0);
+        if (n <= 0) {
+            fprintf(stderr, "Erreur lors de la réception du nom\n");
+            close(client->sock);
+            free(client);
+            continue;
+        }
+        client->nom[n] = '\0';
+        // Supprimer le newline si présent
+        if (client->nom[strlen(client->nom) - 1] == '\n') {
+            client->nom[strlen(client->nom) - 1] = '\0';
+        }
         
-        printf("Nouveau joueur connecté: %s depuis %s:%d\n",
+        printf("✅ Nouveau joueur connecté: %s depuis %s:%d\n",
                client->nom, ipstr, ntohs(client->addr.sin_port));
+
+        // Logger la connexion
+        Logger_JoueurConnecte(g_logger, client->nom, ipstr, ntohs(client->addr.sin_port));
 
         // Ajouter le client à la liste
         pthread_mutex_lock(&mutex_clients);
@@ -210,6 +157,13 @@ int main(void) {
             if (nb_clients >= MIN_JOUEURS && !partie_en_cours) {
                 partie_en_cours = 1;
                 printf("\n🎮 LANCEMENT DE LA PARTIE avec %d joueurs!\n\n", nb_clients);
+                
+                // Logger le début de la partie
+                const char *noms[MAX_JOUEURS];
+                for (int i = 0; i < nb_clients; i++) {
+                    noms[i] = clients_connectes[i]->nom;
+                }
+                Logger_PartieCommencee(g_logger, nb_clients, noms);
                 
                 // Créer un thread pour gérer la partie
                 pthread_t tid_partie;
@@ -228,6 +182,7 @@ int main(void) {
     }
 
     close(server_sock);
+    Logger_Close(g_logger);
     return EXIT_SUCCESS;
 }
 
@@ -267,6 +222,17 @@ void *lancer_partie(void *arg) {
     // Annoncer le gagnant
     Joueur *gagnant = Jeu_determinerGagnant(&jeu);
     printf("\n🏆 Gagnant: %s avec %d points!\n", gagnant->nom, gagnant->score);
+    
+    // Logger la fin de la partie
+    if (g_logger) {
+        const char *noms[MAX_JOUEURS];
+        int scores[MAX_JOUEURS];
+        for (int i = 0; i < nb_clients; i++) {
+            noms[i] = joueurs[i].nom;
+            scores[i] = joueurs[i].score;
+        }
+        Logger_PartieTerminee(g_logger, gagnant->nom, gagnant->score, scores, nb_clients, noms);
+    }
     
     // Envoyer résultats aux clients
     pthread_mutex_lock(&mutex_clients);
