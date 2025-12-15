@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <limits.h>  // FIX: Pour INT_MAX
 #include <unistd.h>
 #include <sys/socket.h>
 #include "robot.h"
@@ -46,7 +47,6 @@ int Robot_EnvoyerNom(Robot *robot) {
 
 /**
  * Recevoir les cartes initiales du serveur
- * Format simple: les cartes sont separees par des espaces ou newline
  */
 int Robot_RecevoirMain(Robot *robot, Carte *cartes, int nb_cartes) {
     if (!robot || !cartes || nb_cartes <= 0) return -1;
@@ -80,7 +80,6 @@ int Robot_Strategie_PlusPetite(Robot *robot) {
     int indice_min = 0;
     int valeur_min = robot->main[0].valeurNum;
 
-    // Trouver la carte avec la plus petite valeur
     for (int i = 1; i < robot->nb_cartes; i++) {
         if (robot->main[i].valeurNum < valeur_min) {
             valeur_min = robot->main[i].valeurNum;
@@ -95,23 +94,80 @@ int Robot_Strategie_PlusPetite(Robot *robot) {
 
 /**
  * Strategie avancee : analyser les rangees et minimiser les pertes
- * (A IMPLEMENTER PLUS TARD)
  */
 int Robot_Strategie_Intelligente(Robot *robot, EtatJeu *etat) {
     if (!robot || !etat || robot->nb_cartes <= 0) return -1;
 
-    // Pour l'instant, on utilise la strategie simple
-    printf("[ROBOT] Strategie INTELLIGENTE: Non implementee, utilisation de PlusPetite\n");
-    return Robot_Strategie_PlusPetite(robot);
+    int meilleur_indice = 0;
+    int meilleur_cout = INT_MAX;  // FIX: INT_MAX maintenant défini
+
+    // Pour chaque carte dans la main
+    for (int i = 0; i < robot->nb_cartes; i++) {
+        int valeur_carte = robot->main[i].valeurNum;
+        int cout = 0;
+        int rangee_cible = -1;
+        int max_derniere_valeur = -1;
+
+        // Trouver la meilleure rangee pour cette carte
+        for (int r = 0; r < 4; r++) {
+            int nb_cartes_rangee = etat->nb_cartes_rangee[r];
+
+            if (nb_cartes_rangee == 0) continue;
+
+            // FIX: Acces correct a la derniere carte
+            Carte derniere_carte = etat->rangees[r][nb_cartes_rangee - 1];
+            int derniere_valeur = derniere_carte.valeurNum;
+
+            if (valeur_carte > derniere_valeur) {
+                if (derniere_valeur > max_derniere_valeur) {
+                    max_derniere_valeur = derniere_valeur;
+                    rangee_cible = r;
+
+                    // Si rangee pleine (5 cartes), on devra la prendre
+                    if (nb_cartes_rangee >= 5) {
+                        cout = 0;
+                        for (int c = 0; c < nb_cartes_rangee; c++) {
+                            cout += etat->rangees[r][c].teteBoeuf;
+                        }
+                    } else {
+                        cout = 0;
+                    }
+                }
+            }
+        }
+
+        // Si aucune rangee ne convient (carte trop petite)
+        if (rangee_cible == -1) {
+            int min_points = INT_MAX;
+            for (int r = 0; r < 4; r++) {
+                int points_rangee = 0;
+                for (int c = 0; c < etat->nb_cartes_rangee[r]; c++) {
+                    points_rangee += etat->rangees[r][c].teteBoeuf;
+                }
+                if (points_rangee < min_points) {
+                    min_points = points_rangee;
+                    rangee_cible = r;
+                }
+            }
+            cout = min_points;
+        }
+
+        if (cout < meilleur_cout) {
+            meilleur_cout = cout;
+            meilleur_indice = i;
+        }
+    }
+
+    printf("[ROBOT] Strategie INTELLIGENTE: Jouer carte #%d (cout estime: %d pts)\n", 
+           meilleur_indice, meilleur_cout);
+    return meilleur_indice;
 }
 
 /**
- * Choisir une carte a jouer (wrapper - appelle la strategie)
+ * Choisir une carte a jouer
  */
 int Robot_ChoisirCarte(Robot *robot) {
     if (!robot || robot->nb_cartes <= 0) return -1;
-
-    // Pour l'instant, utiliser la strategie "plus petite carte"
     return Robot_Strategie_PlusPetite(robot);
 }
 
@@ -141,13 +197,11 @@ int Robot_EnvoyerCarte(Robot *robot, int indice_carte) {
 
 /**
  * Recevoir l'etat du jeu du serveur
- * (Format a definir avec le serveur - pour l'instant, juste afficher)
  */
 int Robot_RecevoirEtatJeu(Robot *robot, EtatJeu *etat) {
     if (!robot || !etat) return -1;
 
     // TODO: Parser le message du serveur et remplir etat
-    // Pour l'instant, juste un placeholder
     printf("[ROBOT] Etat du jeu recu\n");
     return 0;
 }
@@ -158,7 +212,6 @@ int Robot_RecevoirEtatJeu(Robot *robot, EtatJeu *etat) {
 void Robot_RetirerCarte(Robot *robot, int indice) {
     if (!robot || indice < 0 || indice >= robot->nb_cartes) return;
 
-    // Shift les cartes apres l'indice
     for (int i = indice; i < robot->nb_cartes - 1; i++) {
         robot->main[i] = robot->main[i + 1];
     }
@@ -166,7 +219,7 @@ void Robot_RetirerCarte(Robot *robot, int indice) {
 }
 
 /**
- * Afficher la main du robot (debug)
+ * Afficher la main du robot
  */
 void Robot_AfficherMain(Robot *robot) {
     if (!robot) return;
@@ -179,7 +232,7 @@ void Robot_AfficherMain(Robot *robot) {
 }
 
 /**
- * Afficher l'etat du jeu (debug)
+ * Afficher l'etat du jeu
  */
 void Robot_AfficherEtat(EtatJeu *etat) {
     if (!etat) return;
