@@ -237,7 +237,7 @@ int Jeu_choisirRangee(Joueur *joueur, TableJeu *table) {
     for (int i = 0; i < NB_RANGEES_JEU; i++) {
         Rangee *rangee = &table->rangees[i];
         int pts = Rangee_getTetesBoeuf(rangee);
-        snprintf(msg, sizeof(msg), "Rangée %d [%d pts]: ", i + 1, pts);
+        snprintf(msg, sizeof(msg), "Rangée %d [%d pts]:\n", i + 1, pts);
         envoyer_message(joueur->socket, msg);
         
         if (rangee->nbCartes > 0) {
@@ -248,6 +248,9 @@ int Jeu_choisirRangee(Joueur *joueur, TableJeu *table) {
                 envoyer_message(joueur->socket, "\n");
                 free(rangee_str);
             }
+        } else {
+            snprintf(msg, sizeof(msg), "(vide)\n");
+            envoyer_message(joueur->socket, msg);
         }
     }
     
@@ -318,7 +321,7 @@ void Jeu_jouerTour(Jeu *jeu) {
             for (int r = 0; r < NB_RANGEES_JEU; r++) {
                 Rangee *rangee = &jeu->table.rangees[r];
                 int pts = Rangee_getTetesBoeuf(rangee);
-                snprintf(msg, sizeof(msg), "Rangée %d [%d pts]: \n", r + 1, pts);
+                snprintf(msg, sizeof(msg), "Rangée %d [%d pts]:\n", r + 1, pts);
                 envoyer_message(jeu->joueurs[i].socket, msg);
                 
                 if (rangee->nbCartes > 0) {
@@ -329,6 +332,9 @@ void Jeu_jouerTour(Jeu *jeu) {
                         envoyer_message(jeu->joueurs[i].socket, "\n");
                         free(rangee_str);
                     }
+                } else {
+                    snprintf(msg, sizeof(msg), "(vide)\n");
+                    envoyer_message(jeu->joueurs[i].socket, msg);
                 }
             }
         }
@@ -530,12 +536,11 @@ void Jeu_afficherTableau(TableJeu *table) {
         Rangee *rangee = &table->rangees[i];
         int pts = Rangee_getTetesBoeuf(rangee);
         
-        printf("Rangée %d [%d 🐮]: \n", i + 1, pts);
+        printf("Rangée %d [%d 🐮]:\n", i + 1, pts);
         
         if (rangee->nbCartes == 0) {
             printf("(vide)\n\n");
         } else {
-            printf("\n");
             Collection c = Rangee_asCollection(rangee);
             char *rangee_str = Collection_toString(&c, 0);  // 0 = PAS d'indices
             if (rangee_str) {
