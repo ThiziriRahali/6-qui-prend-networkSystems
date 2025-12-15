@@ -20,13 +20,17 @@ SRC_SERVER = Serveur.c client_handler.c
 # Fichiers sources spécifiques au client
 SRC_CLIENT = client.c
 
+# Fichiers sources spécifiques au robot
+SRC_ROBOT = robot.c
+
 # Objets
 OBJ_COMMON = $(SRC_COMMON:.c=.o)
 OBJ_SERVER = $(SRC_SERVER:.c=.o)
 OBJ_CLIENT = $(SRC_CLIENT:.c=.o)
+OBJ_ROBOT = $(SRC_ROBOT:.c=.o)
 
 # Binaires
-TARGETS = serveur client
+TARGETS = serveur client robot
 
 # Cible par défaut
 all: $(TARGETS)
@@ -39,6 +43,10 @@ serveur: $(OBJ_COMMON) $(OBJ_SERVER)
 client: $(OBJ_COMMON) $(OBJ_CLIENT)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
+# Binaire robot
+robot: $(OBJ_COMMON) $(OBJ_ROBOT)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
 # Règle générique pour compiler les .c en .o
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -48,7 +56,7 @@ client: $(OBJ_COMMON) $(OBJ_CLIENT)
 	$(CC) -MM $(CFLAGS) $< > $@
 
 # Inclure les fichiers de dépendances
--include $(SRC_COMMON:.c=.d) $(SRC_SERVER:.c=.d) $(SRC_CLIENT:.c=.d)
+-include $(SRC_COMMON:.c=.d) $(SRC_SERVER:.c=.d) $(SRC_CLIENT:.c=.d) $(SRC_ROBOT:.c=.d)
 
 # Nettoyage
 clean:
