@@ -15,24 +15,59 @@ Cela génère deux binaires :
 
 ### Syntaxe
 ```bash
-./serveur <adresse_ip> <port>
+./serveur <adresse_ip> <port> <nb_joueurs_max>
 ```
+
+### Paramètres
+- `<adresse_ip>` : IP sur laquelle le serveur écoute
+- `<port>` : port TCP (1-65535)
+- `<nb_joueurs_max>` : nombre de joueurs max (2-10). La partie lance quand ce nombre est atteint OU quand le timer expire
 
 ### Exemples
 
-**Sur la machine locale (localhost) :**
+**Sur localhost avec max 4 joueurs :**
 ```bash
-./serveur 127.0.0.1 4242
+./serveur 127.0.0.1 4242 4
 ```
 
 **Sur une interface réseau spécifique :**
 ```bash
-./serveur 192.168.1.100 4242
+./serveur 192.168.1.100 4242 3
 ```
 
 **Sur toutes les interfaces (0.0.0.0) :**
 ```bash
-./serveur 0.0.0.0 4242
+./serveur 0.0.0.0 4242 6
+```
+
+## Comportement du Serveur
+
+1. **Attente du premier joueur** : Le serveur attend passivement
+2. **Dès le premier joueur connecté** : Un **timer de 30 secondes** se lance (⏱️)
+3. **Deux scénarios possibles** :
+   - ✅ Le nombre max de joueurs est atteint → Lancement immédiat
+   - ⏱️ Le timer expire → Lancement avec les joueurs présents + bots pour atteindre le minimum (2 joueurs)
+
+### Exemple de sortie serveur
+
+```
+🎮 Serveur lancé sur 127.0.0.1:4242
+Maximum de joueurs: 4
+En attente de joueurs...
+⏱️  Une fois le premier joueur connecté, un timer de 30 secondes démarre.
+   La partie lancera avec les joueurs connectés + des bots (si nécessaire)
+
+✅ Nouveau joueur connecté: Alice depuis 127.0.0.1:54321
+Joueurs connectés: 1/4
+⏱️  TIMER LANCÉ (30 secondes avant lancement auto)
+
+✅ Nouveau joueur connecté: Bob depuis 127.0.0.1:54322
+Joueurs connectés: 2/4
+⏱️  10 secondes avant lancement auto...
+⏱️  0 secondes avant lancement auto...
+
+🤖 Ajout de 0 bot(s)
+🎮 LANCEMENT DE LA PARTIE (timer écoulé) avec 2 joueurs!
 ```
 
 ## Lancement des Clients
@@ -42,142 +77,112 @@ Cela génère deux binaires :
 ./client <adresse_ip_serveur> <port_serveur> <nom_joueur>
 ```
 
+### Paramètres
+- `<adresse_ip_serveur>` : IP du serveur
+- `<port_serveur>` : port du serveur (doit correspondre)
+- `<nom_joueur>` : nom du joueur (1-31 caractères)
+
 ### Exemples
 
-**Client 1 (Alice) :**
+**Alice se connecte :**
 ```bash
 ./client 127.0.0.1 4242 Alice
 ```
 
-**Client 2 (Bob) :**
+**Bob se connecte :**
 ```bash
 ./client 127.0.0.1 4242 Bob
 ```
 
-**Client 3 (Charlie) - dans un autre terminal :**
+**Charlie se connecte (crée un 3e joueur) :**
 ```bash
 ./client 127.0.0.1 4242 Charlie
 ```
 
-## Scénario Complet de Test
+## Scénarios de Test
 
-### Terminal 1 - Démarrer le serveur
+### Scénario 1 : Attendre le timer (2 joueurs humains)
+
+**Terminal 1 - Serveur (max 4 joueurs) :**
 ```bash
-make clean && make
-./serveur 127.0.0.1 4242
+./serveur 127.0.0.1 4242 4
 ```
 
-Vous verrez :
-```
-🎮 Serveur lancé sur 127.0.0.1:4242
-En attente de 2 joueurs minimum...
-```
-
-### Terminal 2 - Connecter Alice
+**Terminal 2 - Alice :**
 ```bash
 ./client 127.0.0.1 4242 Alice
 ```
 
-Vous verrez côté serveur :
-```
-✅ Nouveau joueur connecté: Alice depuis 127.0.0.1:12345
-Joueurs connectés: 1/2
-En attente de 2 joueurs minimum...
-```
+*[Attend le timer]* → Au bout de 30 secondes, la partie se lance avec Alice + 1 bot
 
-### Terminal 3 - Connecter Bob
+**Terminal 3 - Bob (optionnel, avant les 30 sec) :**
 ```bash
 ./client 127.0.0.1 4242 Bob
 ```
 
-Vous verrez côté serveur :
-```
-✅ Nouveau joueur connecté: Bob depuis 127.0.0.1:12346
-Joueurs connectés: 2/2
+Si Bob se connecte dans les 30 secondes → la partie se lance avec Alice + Bob (pas de bot)
 
-🎮 LANCEMENT DE LA PARTIE avec 2 joueurs!
+### Scénario 2 : Lancer au max de joueurs
+
+**Terminal 1 - Serveur (max 2 joueurs) :**
+```bash
+./serveur 127.0.0.1 4242 2
 ```
 
-Et les clients verront :
+**Terminal 2 - Alice :**
+```bash
+./client 127.0.0.1 4242 Alice
 ```
-La partie commence avec 2 joueurs!
+
+**Terminal 3 - Bob (dans les 30 sec) :**
+```bash
+./client 127.0.0.1 4242 Bob
 ```
+
+Dès que Bob se connecte (2 = max) → Lancement immédiat de la partie (sans attendre le timer)
+
+### Scénario 3 : Comblement de bots
+
+**Terminal 1 - Serveur (max 3 joueurs) :**
+```bash
+./serveur 127.0.0.1 4242 3
+```
+
+**Terminal 2 - Alice :**
+```bash
+./client 127.0.0.1 4242 Alice
+```
+
+*[Attendre 30 secondes - Bob ne se connecte pas]*
+
+La partie se lance avec :
+- Alice (joueur humain)
+- Bot1 (créé auto pour atteindre le minimum de 2 joueurs)
 
 ## Fichier de Log
 
-Chaque partie est enregistrée dans le fichier `jeu.log` avec :
+Chaque partie est enregistrée dans `jeu.log` avec :
 
-- **Connexions** : `[CONNEXION] Joueur 'Alice' depuis 127.0.0.1:12345`
+- **Connexions** : `[CONNEXION] Joueur 'Alice' depuis 127.0.0.1:54321`
 - **Début de partie** : `[PARTIE] Lancement avec 2 joueurs: Alice, Bob`
 - **Fin de partie** : scores finaux et gagnant
 
-### Exemple de contenu jeu.log
-
-```
-=== NOUVEAU JEU - Mon Dec 15 18:42:30 2025
-[18:42:35] [CONNEXION] Joueur 'Alice' depuis 127.0.0.1:54321
-[18:42:40] [CONNEXION] Joueur 'Bob' depuis 127.0.0.1:54322
-
---- DÉBUT DE PARTIE ---
-[PARTIE] Lancement avec 2 joueurs: Alice, Bob
-
-[18:42:42] [TOUR 1] Alice joue carte #42 -> Rangée 2 | Points acqu: 0
-[18:42:42] [TOUR 1] Bob joue carte #35 -> Rangée 1 | Points acqu: 0
-
-[MANCHE 1 TERMINÉE] Scores actuels:
-  Joueur 1: 0 points
-  Joueur 2: 0 points
-
---- FIN DE PARTIE ---
-[GAGNANT] Alice avec 15 points!
-
-Classement final:
-  1. Alice: 15 points
-  2. Bob: 28 points
-
-=== FIN DU JEU ===
-```
-
-## Tester avec plus de joueurs
-
-### Pour 4 joueurs
-
-Terminal 1 : Serveur
-```bash
-./serveur 127.0.0.1 4242
-```
-
-Terminals 2-5 : Clients
-```bash
-./client 127.0.0.1 4242 Alice
-./client 127.0.0.1 4242 Bob
-./client 127.0.0.1 4242 Charlie
-./client 127.0.0.1 4242 Diana
-```
-
-> **Note** : Le minimum de joueurs est 2, le maximum est 10 (configurable dans Serveur.c)
-
-## Modifier les paramètres
-
-Dans `Serveur.c`, ligne 14-15 :
-```c
-#define MIN_JOUEURS 2    // Nombre minimum de joueurs
-#define MAX_JOUEURS 10   // Nombre maximum de joueurs
-```
-
-## Vérifier les logs
+### Consulter les logs
 
 ```bash
 cat jeu.log
+tail -f jeu.log      # en temps réel
 ```
 
-Ou en continu :
-```bash
-tail -f jeu.log
-```
-
-## Nettoyer
+## Nettoyage
 
 ```bash
-make distclean    # Supprime exécutables, objets ET jeu.log
+make distclean    # Supprime exécutables, objets, fichiers .d ET jeu.log
 ```
+
+## Notes
+
+- Le **minimum de joueurs** est fixé à **2** (défini comme `MIN_JOUEURS` dans Serveur.c)
+- Le **timeout du timer** est fixé à **30 secondes** (défini comme `TIMEOUT_TIMER` dans Serveur.c)
+- Les **bots** se connectent automatiquement au timer pour combler jusqu'au minimum
+- Les bots sont identifiés par le nom `Bot1`, `Bot2`, etc.
