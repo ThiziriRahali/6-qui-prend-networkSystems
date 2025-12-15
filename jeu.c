@@ -4,6 +4,7 @@
 #include <string.h>
 #include <limits.h>
 #include <time.h>
+#include <unistd.h>  // Pour getpid()
 
 /* ============ INITIALISATION ============ */
 
