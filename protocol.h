@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <stdarg.h>
 
 /**
  * Protocole de communication serveur <-> clients/robots
