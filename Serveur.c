@@ -375,7 +375,7 @@ void *lancer_partie(void *arg) {
     pthread_mutex_lock(&mutex_clients);
     for (int i = 0; i < nb_clients; i++) {
         if (!clients_connectes[i]->is_bot) {
-            char msg[256];
+            char msg[512];
             snprintf(msg, sizeof(msg), "Partie terminee! Gagnant: %s (%d points)\n", 
                      gagnant->nom, gagnant->score);
             send(clients_connectes[i]->sock, msg, strlen(msg), 0);
