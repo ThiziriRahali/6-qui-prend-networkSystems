@@ -10,7 +10,7 @@ typedef struct {
     
 } Collection;
 
-/* "méthodes" */
+/* "éthodes" */
 void Collection_Init(Collection *p, Carte *cartes, int nbCartes, int maxCartes);
 Carte* Collection_getCartes(Collection *p);
 Carte* Collection_getCarte(Collection *p, int index);
@@ -22,7 +22,7 @@ void Collection_ajouterCarte(Collection *p, Carte *carte);
 int Collection_getTetesBoeufTotal(Collection *p);
 int Collectionn_isPleine(Collection *p);
 
-char* Collection_toString(Collection *p);
+char* Collection_toString(Collection *p, int afficher_indices);
 
 int Collection_getScore(Collection *p);
 
