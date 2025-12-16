@@ -1,4 +1,3 @@
-// Serveur.c : serveur de jeu 6 qui prend
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,7 +7,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <time.h>
-#include "Joueur.h"  // <- Doit etre AVANT jeu.h pour avoir MAX_CHARS
+#include "Joueur.h"
 #include "jeu.h"
 #include "logging.h"
 #include "server_communication.h"
@@ -17,9 +16,8 @@
 #define MAX_NAME_LEN 32
 #define MIN_JOUEURS 2
 #define MAX_JOUEURS 10
-#define TIMEOUT_TIMER 30  // Secondes avant lancement auto avec bots
+#define TIMEOUT_TIMER 30
 
-// Prototype du gestionnaire de client
 void *client_handler(void *arg);
 void *lancer_partie(void *arg);
 void *timer_thread(void *arg);
@@ -31,7 +29,6 @@ typedef struct {
     int is_bot;
 } client_t;
 
-// Variables partagees (protegees par mutex)
 client_t *clients_connectes[MAX_JOUEURS];
 int nb_clients = 0;
 int nb_joueurs_max = 0;
@@ -67,7 +64,6 @@ int main(int argc, char *argv[]) {
 
     nb_joueurs_max = max_joueurs;
 
-    // Initialiser le logger
     g_logger = Logger_Init();
     if (!g_logger) {
         fprintf(stderr, "Impossible d'initialiser le logger\n");
@@ -77,7 +73,6 @@ int main(int argc, char *argv[]) {
     int server_sock;
     struct sockaddr_in server_addr;
 
-    // 1) Creation du socket
     server_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (server_sock == -1) {
         perror("socket");
@@ -85,16 +80,13 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    // Option pour reutiliser rapidement le port
     int opt = 1;
     setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-    // 2) Remplissage de la structure d'adresse du serveur
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
     
-    // Conversion de l'adresse IP
     if (inet_pton(AF_INET, ip_str, &server_addr.sin_addr) <= 0) {
         perror("inet_pton");
         close(server_sock);
@@ -102,7 +94,6 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    // 3) Bind
     if (bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
         perror("bind");
         close(server_sock);
@@ -110,7 +101,6 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    // 4) Listen
     if (listen(server_sock, BACKLOG) == -1) {
         perror("listen");
         close(server_sock);
@@ -124,7 +114,6 @@ int main(int argc, char *argv[]) {
     printf("Une fois le premier joueur connecte, un timer de %d secondes demarre.\n", TIMEOUT_TIMER);
     printf("La partie lancera avec les joueurs connectes + des bots (si necessaire)\n\n");
 
-    // 5) Boucle principale d'acceptation
     while (1) {
         client_t *client = malloc(sizeof(client_t));
         if (!client) {
@@ -146,7 +135,6 @@ int main(int argc, char *argv[]) {
         char ipstr[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &client->addr.sin_addr, ipstr, sizeof(ipstr));
         
-        // Recevoir le nom du joueur
         ssize_t n = recv(client->sock, client->nom, MAX_NAME_LEN - 1, 0);
         if (n <= 0) {
             fprintf(stderr, "Erreur lors de la reception du nom\n");
@@ -155,7 +143,6 @@ int main(int argc, char *argv[]) {
             continue;
         }
         client->nom[n] = '\0';
-        // Supprimer le newline si present
         if (client->nom[strlen(client->nom) - 1] == '\n') {
             client->nom[strlen(client->nom) - 1] = '\0';
         }
@@ -164,10 +151,8 @@ int main(int argc, char *argv[]) {
         printf("Nouveau joueur connecte: %s depuis %s:%d\n",
                client->nom, ipstr, ntohs(client->addr.sin_port));
 
-        // Logger la connexion
         Logger_JoueurConnecte(g_logger, client->nom, ipstr, ntohs(client->addr.sin_port));
 
-        // Ajouter le client a la liste
         pthread_mutex_lock(&mutex_clients);
         
         if (nb_clients < nb_joueurs_max && !partie_en_cours) {
@@ -176,38 +161,32 @@ int main(int argc, char *argv[]) {
             
             printf("Joueurs connectes: %d/%d\n", nb_clients, nb_joueurs_max);
             
-            // Si c'est le premier joueur, demarrer le timer
             if (nb_clients == 1 && !timer_active) {
                 timer_active = 1;
                 timer_start = time(NULL);
                 printf("TIMER LANCE (%d secondes avant lancement auto)\n\n", TIMEOUT_TIMER);
                 
-                // Creer le thread timer
                 pthread_t tid_timer;
                 pthread_create(&tid_timer, NULL, timer_thread, NULL);
                 pthread_detach(tid_timer);
             }
             
-            // Si on a atteint le max de joueurs, lancer immediatement
             if (nb_clients >= nb_joueurs_max && !partie_en_cours) {
                 partie_en_cours = 1;
                 timer_active = 0;
                 printf("\nLANCEMENT DE LA PARTIE (nombre max atteint) avec %d joueurs!\n\n", nb_clients);
                 
-                // Logger le debut de la partie
                 const char *noms[MAX_JOUEURS];
                 for (int i = 0; i < nb_clients; i++) {
                     noms[i] = clients_connectes[i]->nom;
                 }
                 Logger_PartieCommencee(g_logger, nb_clients, noms);
                 
-                // Creer un thread pour gerer la partie
                 pthread_t tid_partie;
                 pthread_create(&tid_partie, NULL, lancer_partie, NULL);
                 pthread_detach(tid_partie);
             }
         } else {
-            // Partie deja en cours ou trop de joueurs
             char *msg = "Partie deja en cours ou serveur plein\n";
             send(client->sock, msg, strlen(msg), 0);
             close(client->sock);
@@ -222,9 +201,6 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-/**
- * Thread timer : lance la partie apres TIMEOUT_TIMER secondes
- */
 void *timer_thread(void *arg) {
     (void)arg;
     
@@ -242,11 +218,9 @@ void *timer_thread(void *arg) {
     }
     
     if (!timer_active) {
-        // La partie a deja commence (max joueurs atteint)
         return NULL;
     }
     
-    // Le timer est termine, lancer la partie avec les joueurs connectes + bots
     pthread_mutex_lock(&mutex_clients);
     
     if (partie_en_cours) {
@@ -257,7 +231,6 @@ void *timer_thread(void *arg) {
     partie_en_cours = 1;
     timer_active = 0;
     
-    // Ajouter des bots pour remplir jusqu'au minimum (MIN_JOUEURS)
     int nb_a_ajouter = MIN_JOUEURS - nb_clients;
     printf("\nAjout de %d bot(s)\n", nb_a_ajouter);
     
@@ -266,7 +239,7 @@ void *timer_thread(void *arg) {
         if (!bot) continue;
         
         memset(bot, 0, sizeof(client_t));
-        bot->sock = -1;  // Pas de socket pour les bots
+        bot->sock = -1;
         bot->is_bot = 1;
         snprintf(bot->nom, MAX_NAME_LEN, "Bot%d", i + 1);
         
@@ -279,14 +252,12 @@ void *timer_thread(void *arg) {
     
     printf("\nLANCEMENT DE LA PARTIE (timer ecoule) avec %d joueurs!\n\n", nb_clients);
     
-    // Logger le debut de la partie
     const char *noms[MAX_JOUEURS];
     for (int i = 0; i < nb_clients; i++) {
         noms[i] = clients_connectes[i]->nom;
     }
     Logger_PartieCommencee(g_logger, nb_clients, noms);
     
-    // Creer un thread pour gerer la partie
     pthread_t tid_partie;
     pthread_create(&tid_partie, NULL, lancer_partie, NULL);
     pthread_detach(tid_partie);
@@ -301,12 +272,11 @@ void *lancer_partie(void *arg) {
     
     pthread_mutex_lock(&mutex_clients);
     
-    // Creer les joueurs
     Joueur *joueurs = malloc(nb_clients * sizeof(Joueur));
     for (int i = 0; i < nb_clients; i++) {
         Joueur_Init(&joueurs[i], 0, clients_connectes[i]->nom);
-        joueurs[i].socket = clients_connectes[i]->sock;  // ← AJOUTER CETTE LIGNE
-        joueurs[i].is_bot = clients_connectes[i]->is_bot;  // ← AJOUTER CETTE LIGNE
+        joueurs[i].socket = clients_connectes[i]->sock;
+        joueurs[i].is_bot = clients_connectes[i]->is_bot;
         if (!clients_connectes[i]->is_bot) {
             snprintf(joueurs[i].ip, MAX_CHARS, "%d", clients_connectes[i]->sock);
         } else {
@@ -314,11 +284,9 @@ void *lancer_partie(void *arg) {
         }
     }
     
-    // Initialiser le jeu
     Jeu jeu;
     Jeu_Init(&jeu, joueurs, nb_clients);
     
-    // Envoyer message de debut a tous les joueurs humains
     ServerComm_AnnonceGameStart(nb_clients);
     for (int i = 0; i < nb_clients; i++) {
         if (!clients_connectes[i]->is_bot) {
@@ -330,39 +298,27 @@ void *lancer_partie(void *arg) {
     
     pthread_mutex_unlock(&mutex_clients);
     
-    // Jouer les tours
     int tour_count = 0;
     while (!Jeu_estTermine(&jeu)) {
         tour_count++;
         
-        // Annoncer le tour au serveur local
-        //printf("\n[Tour %d] %s joue...\n", tour_count, joueurs[jeu.tourActuel].nom);
         
-        // Envoyer le tour aux clients
-        //ServerComm_AnnonceTurn(joueurs[jeu.tourActuel].nom, tour_count);
-        
-        // Jouer le tour
         Jeu_jouerTour(&jeu);
         
-        // Afficher localement
         Jeu_afficherTableau(&jeu.table);
         Jeu_afficherScores(&jeu);
         
-        // Envoyer l'etat du plateau et les scores aux clients
         ServerComm_SendBoardState(&jeu);
         ServerComm_SendScores(joueurs, nb_clients);
         
-        sleep(1); // Pause entre les tours
+        sleep(1);
     }
     
-    // Annoncer le gagnant
     Joueur *gagnant = Jeu_determinerGagnant(&jeu);
     printf("\nGagnant: %s avec %d points!\n", gagnant->nom, gagnant->score);
     
-    // Envoyer le resultat aux clients
     ServerComm_AnnounceGameEnd(gagnant->nom, gagnant->score, joueurs, nb_clients);
     
-    // Logger la fin de la partie
     if (g_logger) {
         const char *noms[MAX_JOUEURS];
         int scores[MAX_JOUEURS];
@@ -373,7 +329,6 @@ void *lancer_partie(void *arg) {
         Logger_PartieTerminee(g_logger, gagnant->nom, gagnant->score, scores, nb_clients, noms);
     }
     
-    // Envoyer resultats aux clients humains
     pthread_mutex_lock(&mutex_clients);
     for (int i = 0; i < nb_clients; i++) {
         if (!clients_connectes[i]->is_bot) {
