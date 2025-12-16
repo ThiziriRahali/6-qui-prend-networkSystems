@@ -1,6 +1,6 @@
 # Compilateur et flags
 CC = gcc
-CFLAGS = -Wall -Wextra -Wpedantic -std=c11 -g -I./headers
+CFLAGS = -Wall -Wextra -Wpedantic -std=c11 -g -I./headers -D_XOPEN_SOURCE=700
 LDFLAGS = -pthread
 
 # Répertoires
