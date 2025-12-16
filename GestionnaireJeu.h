@@ -12,7 +12,6 @@ typedef struct {
     Collection *carteNonDistribuees;
     Collection *carteDejaDistribuees;
     Collection colonnes[4];
-    int partie_terminee; // 0 = en cours, 1 = arrêt
 } GestionnaireJeu;
 
 /* "méthodes" */

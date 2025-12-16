@@ -444,7 +444,7 @@ void Jeu_jouerTour(Jeu *jeu) {
     
     printf("--- Fin du tour %d ---\n", jeu->tourActuel);
     Jeu_afficherTableau(&jeu->table);
-    Jeu_afficherScores(jeu);
+    Jeu_afficherScores(&jeu);
 }
 
 void Jeu_appliquerTour(Jeu *jeu, Carte *cartes_jouees, int *indices_rangees) {
