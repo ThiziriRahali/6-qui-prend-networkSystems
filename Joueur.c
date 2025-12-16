@@ -14,9 +14,9 @@ void Joueur_Init(Joueur *p, int x, char* y) {
     p->nom[MAX_CHARS - 1] = '\0';
 
     p->score = x;
-    p->socket = -1;      // Par défaut, pas de socket
-    p->is_bot = 0;       // Par défaut, joueur humain
-    p->id = 0;           // Sera défini par le serveur
+    p->socket = -1;
+    p->is_bot = 0;
+    p->id = 0;
 }
 
 void Joueur_Method(Joueur *p, int dx, char* dy) {
@@ -30,11 +30,10 @@ void Joueur_Method(Joueur *p, int dx, char* dy) {
     }
 }
 
-/* Affiche les cartes du joueur */
 void Joueur_AfficherCartes(Joueur *p) {
     if (p == NULL) return;
 
-    char *s = Collection_toString(&p->jeuCartes, 1);  // 1 = afficher indices
+    char *s = Collection_toString(&p->jeuCartes, 1);
     if (s == NULL) return;
 
     printf("Cartes de %s :\n%s", p->nom, s);
