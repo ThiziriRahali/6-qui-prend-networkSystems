@@ -1,0 +1,16 @@
+#ifndef PROTOCOL_H
+#define PROTOCOL_H
+
+#define PROTOCOL_VERSION "1.0"
+
+#define CMD_REGISTER "REGISTER"
+#define CMD_PLAY_CARD "PLAY"
+#define CMD_JOIN_GAME "JOIN"
+#define CMD_LEAVE_GAME "LEAVE"
+#define CMD_ACK "ACK"
+#define CMD_ERROR "ERROR"
+#define CMD_GAME_STATE "STATE"
+#define CMD_SCORES "SCORES"
+#define CMD_GAME_END "END"
+
+#endif
