@@ -1,1 +1,6 @@
-template.o: template.c template.h
+-MM
+-Wall
+-Wextra
+-Wpedantic
+-g
+template.c

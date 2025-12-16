@@ -1,1 +1,6 @@
-Collection.o: Collection.c Collection.h Carte.h global.h
+-MM
+-Wall
+-Wextra
+-Wpedantic
+-g
+Collection.c

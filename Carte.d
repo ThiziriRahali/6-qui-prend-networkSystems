@@ -1,1 +1,6 @@
-Carte.o: Carte.c template.h Carte.h
+-MM
+-Wall
+-Wextra
+-Wpedantic
+-g
+Carte.c

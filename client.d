@@ -1,1 +1,6 @@
-client.o: client.c
+-MM
+-Wall
+-Wextra
+-Wpedantic
+-g
+client.c

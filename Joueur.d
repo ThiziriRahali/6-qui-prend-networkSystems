@@ -1,1 +1,6 @@
-Joueur.o: Joueur.c Joueur.h Collection.h Carte.h
+-MM
+-Wall
+-Wextra
+-Wpedantic
+-g
+Joueur.c

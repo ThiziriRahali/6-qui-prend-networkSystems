@@ -1,1 +1,6 @@
-global.o: global.c
+-MM
+-Wall
+-Wextra
+-Wpedantic
+-g
+global.c

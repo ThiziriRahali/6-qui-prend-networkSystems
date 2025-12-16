@@ -1,1 +1,6 @@
-client_handler.o: client_handler.c
+-MM
+-Wall
+-Wextra
+-Wpedantic
+-g
+client_handler.c

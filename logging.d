@@ -1,1 +1,6 @@
-logging.o: logging.c logging.h Joueur.h Collection.h Carte.h jeu.h
+-MM
+-Wall
+-Wextra
+-Wpedantic
+-g
+logging.c

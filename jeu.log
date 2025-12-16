@@ -141,3 +141,70 @@ Classement final:
 
 --- DÉBUT DE PARTIE ---
 [PARTIE] Lancement avec 2 joueurs: Bob, Alice
+
+=== NOUVEAU JEU - Mon Dec 15 22:53:24 2025
+[22:53:30] [CONNEXION] Joueur 'Alice' depuis 127.0.0.1:48870
+[22:53:39] [CONNEXION] Joueur 'Bob' depuis 127.0.0.1:41680
+
+--- DÉBUT DE PARTIE ---
+[PARTIE] Lancement avec 2 joueurs: Alice, Bob
+
+=== NOUVEAU JEU - Mon Dec 15 22:59:50 2025
+[22:59:54] [CONNEXION] Joueur 'Alice' depuis 127.0.0.1:59964
+[22:59:57] [CONNEXION] Joueur 'Bob' depuis 127.0.0.1:59980
+
+--- DÉBUT DE PARTIE ---
+[PARTIE] Lancement avec 2 joueurs: Alice, Bob
+
+--- FIN DE PARTIE ---
+[GAGNANT] Bob avec 8 points!
+
+Classement final:
+  1. Alice: 14 points
+  2. Bob: 8 points
+
+
+=== NOUVEAU JEU - Mon Dec 15 23:07:22 2025
+
+=== NOUVEAU JEU - Mon Dec 15 23:07:32 2025
+[23:07:34] [CONNEXION] Joueur 'Alice' depuis 127.0.0.1:38116
+[23:07:36] [CONNEXION] Joueur 'Bob' depuis 127.0.0.1:38122
+
+--- DÉBUT DE PARTIE ---
+[PARTIE] Lancement avec 2 joueurs: Alice, Bob
+
+--- FIN DE PARTIE ---
+[GAGNANT] Alice avec 0 points!
+
+Classement final:
+  1. Alice: 0 points
+  2. Bob: 14 points
+
+
+=== NOUVEAU JEU - Mon Dec 15 23:22:52 2025
+[23:22:54] [CONNEXION] Joueur 'Alice' depuis 127.0.0.1:44246
+[23:22:58] [CONNEXION] Joueur 'Bob' depuis 127.0.0.1:44258
+
+--- DÉBUT DE PARTIE ---
+[PARTIE] Lancement avec 2 joueurs: Alice, Bob
+
+=== NOUVEAU JEU - Mon Dec 15 23:25:10 2025
+[23:25:21] [CONNEXION] Joueur 'Bob' depuis 127.0.0.1:53028
+[23:25:26] [CONNEXION] Joueur 'Rbbot55552' depuis 127.0.0.1:34772
+
+--- DÉBUT DE PARTIE ---
+[PARTIE] Lancement avec 2 joueurs: Bob, Rbbot55552
+
+=== NOUVEAU JEU - Mon Dec 15 23:27:41 2025
+[23:28:00] [CONNEXION] Joueur 'Michel' depuis 127.0.0.1:51082
+[23:28:30] [CONNEXION] Joueur 'Bot1' depuis 127.0.0.1:0
+
+--- DÉBUT DE PARTIE ---
+[PARTIE] Lancement avec 2 joueurs: Michel, Bot1
+
+=== NOUVEAU JEU - Mon Dec 15 23:32:35 2025
+[23:32:44] [CONNEXION] Joueur 'Michel' depuis 127.0.0.1:33802
+[23:33:14] [CONNEXION] Joueur 'Bot1' depuis 127.0.0.1:0
+
+--- DÉBUT DE PARTIE ---
+[PARTIE] Lancement avec 2 joueurs: Michel, Bot1
