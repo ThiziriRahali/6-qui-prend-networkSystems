@@ -208,3 +208,20 @@ Classement final:
 
 --- DÉBUT DE PARTIE ---
 [PARTIE] Lancement avec 2 joueurs: Michel, Bot1
+
+=== NOUVEAU JEU - Tue Dec 16 11:16:37 2025
+[11:16:58] [CONNEXION] Joueur 'Francis' depuis 127.0.0.1:56408
+[11:17:28] [CONNEXION] Joueur 'Bot1' depuis 127.0.0.1:0
+
+--- DÉBUT DE PARTIE ---
+[PARTIE] Lancement avec 2 joueurs: Francis, Bot1
+[11:17:42] [CONNEXION] Joueur 'Francis' depuis 127.0.0.1:51666
+
+=== NOUVEAU JEU - Tue Dec 16 11:17:50 2025
+
+=== NOUVEAU JEU - Tue Dec 16 11:18:01 2025
+[11:18:10] [CONNEXION] Joueur 'Michel' depuis 127.0.0.1:34226
+[11:18:12] [CONNEXION] Joueur 'Francis' depuis 127.0.0.1:34232
+
+--- DÉBUT DE PARTIE ---
+[PARTIE] Lancement avec 2 joueurs: Michel, Francis

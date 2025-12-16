@@ -41,6 +41,8 @@ time_t timer_start = 0;
 pthread_mutex_t mutex_clients = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond_min_joueurs = PTHREAD_COND_INITIALIZER;
 Logger *g_logger = NULL;
+int partie_interruption = 0;  // 1 si un joueur s'est déconnecté
+
 
 int main(int argc, char *argv[]) {
     if (argc != 4) {
@@ -329,10 +331,19 @@ void *lancer_partie(void *arg) {
     }
     
     pthread_mutex_unlock(&mutex_clients);
+    pthread_t *client_threads = malloc(nb_clients * sizeof(pthread_t));
+    for (int i = 0; i < nb_clients; i++) {
+        if (!clients_connectes[i]->is_bot) {
+            pthread_create(&client_threads[i], NULL, client_handler, clients_connectes[i]);
+            pthread_detach(client_threads[i]);
+        }
+    }
+
     
     // Jouer les tours
     int tour_count = 0;
-    while (!Jeu_estTermine(&jeu)) {
+    while (!Jeu_estTermine(&jeu) && !partie_interruption) {
+
         tour_count++;
         
         // Annoncer le tour au serveur local
@@ -390,9 +401,51 @@ void *lancer_partie(void *arg) {
     partie_en_cours = 0;
     timer_active = 0;
     pthread_mutex_unlock(&mutex_clients);
-    
+    partie_interruption = 0;  // Reset pour la prochaine partie
+    free(client_threads);
     free(joueurs);
     
     printf("\nPartie terminee. En attente de nouveaux joueurs...\n");
+    return NULL;
+}
+
+void *client_handler(void *arg) {
+    client_t *client = (client_t *)arg;
+    char buffer[1024];
+    ssize_t n;
+
+    printf("Thread client pour %s (socket: %d) lancé\n", client->nom, client->sock);
+
+    while (!partie_interruption && partie_en_cours) {
+        n = recv(client->sock, buffer, sizeof(buffer) - 1, 0);
+        if (n <= 0) {
+            // Déconnexion du client
+            printf("Client %s déconnecté (socket: %d), ARRÊT DE LA PARTIE\n", 
+                   client->nom, client->sock);
+            pthread_mutex_lock(&mutex_clients);
+            partie_interruption = 1;  // ← SIGNAL D'ARRÊT
+            pthread_mutex_unlock(&mutex_clients);
+            break;
+        }
+        
+        buffer[n] = '\0';
+        printf("Message de %s: %s\n", client->nom, buffer);
+        
+        // Envoyer une réponse si nécessaire
+        char reply[1200];
+        snprintf(reply, sizeof(reply), "OK: %s", buffer);
+        
+        if (send(client->sock, reply, strlen(reply), 0) == -1) {
+            perror("send");
+            pthread_mutex_lock(&mutex_clients);
+            partie_interruption = 1;
+            pthread_mutex_unlock(&mutex_clients);
+            break;
+        }
+    }
+
+    printf("Client %d déconnecté\n", client->sock);
+    close(client->sock);
+    free(client);
     return NULL;
 }
