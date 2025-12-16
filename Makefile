@@ -1,9 +1,9 @@
 # Compilateur et options
 CC       = gcc
-CFLAGS   = -Wall -Wextra -Wpedantic -std=c11 -g
+CFLAGS   = -Wall -Wextra -Wpedantic -std=c11 -g -MMD -MP
 LDFLAGS  = -pthread
 
-# Fichiers sources communs (utilises par serveur et client)
+# Fichiers sources communs (utilisés par serveur et client)
 SRC_COMMON = \
     Carte.c \
     Collection.c \
@@ -14,10 +14,10 @@ SRC_COMMON = \
     jeu.c \
     logging.c
 
-# Fichiers sources specifiques au serveur
+# Fichiers sources spécifiques au serveur
 SRC_SERVER = Serveur.c client_handler.c server_communication.c
 
-# Fichiers sources specifiques au client
+# Fichiers sources spécifiques au client
 SRC_CLIENT = client.c
 
 # Objets
@@ -25,13 +25,15 @@ OBJ_COMMON = $(SRC_COMMON:.c=.o)
 OBJ_SERVER = $(SRC_SERVER:.c=.o)
 OBJ_CLIENT = $(SRC_CLIENT:.c=.o)
 
+DEPS = $(OBJ_COMMON:.o=.d) $(OBJ_SERVER:.o=.d) $(OBJ_CLIENT:.o=.d)
+
 # Binaires
 TARGETS = serveur client
 
-# Cible par defaut
+# Cible par défaut
 all: $(TARGETS) scripts
 
-# Rendre les scripts executables
+# Rendre les scripts exécutables
 scripts:
 	chmod +x stats.sh 2>/dev/null || true
 
@@ -43,16 +45,12 @@ serveur: $(OBJ_COMMON) $(OBJ_SERVER)
 client: $(OBJ_COMMON) $(OBJ_CLIENT)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
-# Regle generique pour compiler les .c en .o
+# Règle générique pour compiler les .c en .o + .d
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Dependencies (generation automatique)
-%.d: %.c
-	$(CC) -MM $(CFLAGS) $< > $@
-
-# Inclure les fichiers de dependances
--include $(SRC_COMMON:.c=.d) $(SRC_SERVER:.c=.d) $(SRC_CLIENT:.c=.d)
+# Inclure les fichiers de dépendances (silencieusement)
+-include $(DEPS)
 
 # Cible pour afficher les stats avec le script shell
 stats-shell:
@@ -67,8 +65,8 @@ stats-shell:
 clean:
 	rm -f *.o *.d $(TARGETS)
 
-# Nettoyage complet (+ objets inutiles)
+# Nettoyage complet
 distclean: clean
-	rm -f *.o *.d jeu.log
+	rm -f jeu.log
 
 .PHONY: all clean distclean scripts stats-shell
