@@ -202,7 +202,6 @@ void *timer_thread(void *arg) {
     partie_en_cours = 1;
     timer_active = 0;
     
-    // ✅ CORRECTION : Compléter jusqu'à nb_joueurs_max au lieu de MIN_JOUEURS
     int nb_a_ajouter = nb_joueurs_max - nb_clients;
     printf("\nAjout de %d bot(s) pour atteindre %d joueurs\n", nb_a_ajouter, nb_joueurs_max);
     

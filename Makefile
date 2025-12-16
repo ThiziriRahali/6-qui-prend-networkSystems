@@ -65,7 +65,7 @@ run-client: $(CLIENT_EXEC)
 	./$(CLIENT_EXEC) 127.0.0.1 4242 Alice
 
 # Stats
-stats-shell:
+stats:
 	@if [ -f "$(LOGS_DIR)/jeu.log" ]; then \
 		bash $(LOGS_DIR)/stats.sh $(LOGS_DIR)/jeu.log; \
 	else \
@@ -77,7 +77,7 @@ test:
 	bash $(SCRIPTS_DIR)/run_test.sh
 
 # Phony targets
-.PHONY: all clean rebuild run-serveur run-client stats-shell test info
+.PHONY: all clean rebuild run-serveur run-client stats test info
 
 # Debug
 info:

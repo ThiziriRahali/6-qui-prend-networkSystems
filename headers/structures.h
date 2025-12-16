@@ -58,3 +58,11 @@ typedef struct {
     Carte carte;
     int joueur_id;
 } CarteJouee;
+
+typedef struct {
+    Joueur *joueur;
+    Jeu *jeu;
+    pthread_mutex_t *mutex_cartes;
+    CarteJouee *cartes_jouees;
+    int *partie_terminee;
+} BotThreadArgs;

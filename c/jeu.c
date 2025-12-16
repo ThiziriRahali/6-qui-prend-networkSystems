@@ -1,14 +1,5 @@
 #include "../headers/global.h"
 
-// Structure pour passer les données au thread du bot
-typedef struct {
-    Joueur *joueur;
-    Jeu *jeu;
-    pthread_mutex_t *mutex_cartes;
-    CarteJouee *cartes_jouees;
-    int *partie_terminee;
-} BotThreadArgs;
-
 static int envoyer_message(int socket, const char *message) {
     if (socket == -1) return -1;
     ssize_t sent = send(socket, message, strlen(message), 0);
@@ -402,7 +393,6 @@ void Jeu_reinitialiserManche(Jeu *jeu) {
     printf("\n");
 }
 
-// Fonction exécutée par chaque thread de bot (VERSION SIMPLIFIÉE)
 void* thread_bot_play(void *arg) {
     BotThreadArgs *args = (BotThreadArgs *)arg;
     Joueur *bot = args->joueur;
@@ -410,7 +400,6 @@ void* thread_bot_play(void *arg) {
     
     printf("🤖 [Thread %s] Démarré (PID thread: %lu)\n", bot->nom, pthread_self());
     
-    // Vérifier si le bot a des cartes
     if (bot->jeuCartes.nbCartes == 0) {
         printf("⚠️ %s n'a plus de cartes! Redistribution...\n", bot->nom);
         
@@ -430,19 +419,22 @@ void* thread_bot_play(void *arg) {
         printf("✅ %s a reçu %d cartes\n", bot->nom, bot->jeuCartes.nbCartes);
     }
     
-    // Le bot joue sa première carte (la plus petite)
+
     int choix_carte = 0;
+    for(int i = 0; i < bot->jeuCartes.nbCartes; i++) {
+        if(bot->jeuCartes.cartes[i].teteBoeuf < bot->jeuCartes.cartes[choix_carte].teteBoeuf) {
+            choix_carte = i;
+        }
+    }
     Carte carte_choisie = bot->jeuCartes.cartes[choix_carte];
     printf("🤖 [Thread %s] Joue la carte %d\n", bot->nom, carte_choisie.valeurNum);
-    sleep(1); // Simulation de "réflexion"
+    sleep(1);
     
-    // Enregistrer la carte jouée (accès protégé)
     pthread_mutex_lock(args->mutex_cartes);
     args->cartes_jouees[bot->id].carte = carte_choisie;
     args->cartes_jouees[bot->id].joueur_id = bot->id;
     pthread_mutex_unlock(args->mutex_cartes);
     
-    // Retirer la carte de la main du bot
     Joueur_retirerCarte(bot, choix_carte);
     
     printf("✅ [Thread %s] Carte %d enregistrée et retirée\n", bot->nom, carte_choisie.valeurNum);
@@ -468,7 +460,6 @@ void Jeu_jouerTour(Jeu *jeu) {
         return;
     }
     
-    // Initialiser le tableau
     memset(cartes_jouees, 0, jeu->nbJoueurs * sizeof(CarteJouee));
     
     Jeu_afficherTableau(&jeu->table);
@@ -481,7 +472,6 @@ void Jeu_jouerTour(Jeu *jeu) {
     pthread_mutex_t mutex_cartes = PTHREAD_MUTEX_INITIALIZER;
     int partie_terminee = 0;
     
-    // Créer un thread pour chaque bot
     pthread_t threads_bots[MAX_JOUEURS];
     BotThreadArgs args_bots[MAX_JOUEURS];
     int nb_bots = 0;
@@ -499,12 +489,11 @@ void Jeu_jouerTour(Jeu *jeu) {
         }
     }
     
-    // Traiter les joueurs humains
     for (int i = 0; i < jeu->nbJoueurs; i++) {
         Joueur *joueur = &jeu->joueurs[i];
         
         if (joueur->is_bot) {
-            continue;  // Les bots sont gérés par leurs threads
+            continue;
         }
         
         for (int j = 0; j < jeu->nbJoueurs; j++) {
@@ -581,7 +570,6 @@ void Jeu_jouerTour(Jeu *jeu) {
         Joueur_retirerCarte(joueur, choix_carte);
     }
     
-    // Attendre que tous les threads des bots se terminent
     printf("\n⏳ Attente de tous les bots...\n");
     for (int i = 0; i < nb_bots; i++) {
         pthread_join(threads_bots[i], NULL);
@@ -595,7 +583,6 @@ void Jeu_jouerTour(Jeu *jeu) {
     
     sleep(2);
     
-    // Tri des cartes jouées
     for (int i = 0; i < jeu->nbJoueurs - 1; i++) {
         for (int j = i + 1; j < jeu->nbJoueurs; j++) {
             if (cartes_jouees[i].carte.valeurNum > cartes_jouees[j].carte.valeurNum) {
@@ -605,8 +592,7 @@ void Jeu_jouerTour(Jeu *jeu) {
             }
         }
     }
-    
-    // Traitement des cartes dans l'ordre
+
     for (int i = 0; i < jeu->nbJoueurs; i++) {
         Carte carte = cartes_jouees[i].carte;
         int joueur_id = cartes_jouees[i].joueur_id;
