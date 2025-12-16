@@ -1,0 +1,35 @@
+#ifndef DEFINES_H
+#define DEFINES_H
+
+#define NB_RANGEES_JEU 4
+#define NB_CARTES_MAX_RANGEE 6
+#define NB_CARTES_PAR_JOUEUR 10
+#define NB_TOURS 10
+#define DECK_TOTAL 104
+#define POINTS_LIMITE 66
+#define MAX_SIZE 128
+#define MAX_CHARS 256
+
+#define LOG_FILE "logs/jeu.log"
+#define MAX_LOG_LINE 1024
+
+#define MSG_GAME_START "GAME_START:%d"
+#define MSG_PLAYER_HAND "HAND:%s"
+#define MSG_YOUR_TURN "YOUR_TURN"
+#define MSG_BOARD_STATE "BOARD:%s"
+#define MSG_SCORES "SCORES:%s"
+#define MSG_GAME_END "GAME_END:%s"
+#define MSG_ROUND_END "ROUND_END"
+#define MSG_PLAY_CARD "PLAY:%d"
+
+#define MAX_CLIENTS 10
+#define TAILLE_BUFFER 2048
+#define TAILLE_NOM_JOUEUR 256
+
+#define BACKLOG 10
+#define MAX_NAME_LEN 32
+#define MIN_JOUEURS 2
+#define MAX_JOUEURS 10
+#define TIMEOUT_TIMER 30
+
+#endif
