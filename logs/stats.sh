@@ -3,7 +3,7 @@
 # Script de generation de statistiques a partir de jeu.log
 # Usage: ./stats.sh [jeu.log]
 
-LOG_FILE="${1:-jeu.log}"
+LOG_FILE="${1:-logs/jeu.log}"
 
 if [ ! -f "$LOG_FILE" ]; then
     echo "Erreur: fichier $LOG_FILE non trouve"
