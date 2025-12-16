@@ -8,7 +8,7 @@
 #define POINTS_LIMITE 66
 #define MAX_CHARS 256
 
-#define LOG_FILE "jeu.log"
+#define LOG_FILE "logs/jeu.log"
 #define MAX_LOG_LINE 1024
 
 #define BACKLOG 10

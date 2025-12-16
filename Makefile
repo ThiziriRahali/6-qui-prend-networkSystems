@@ -66,18 +66,19 @@ run-client: $(CLIENT_EXEC)
 
 # Stats
 stats-shell:
-	@if [ -f "$(LOGS_DIR)/jeu.log" ]; then \
-		bash $(SCRIPTS_DIR)/stats.sh; \
+	@if [ -f "jeu.log" ]; then \
+		bash $(SCRIPTS_DIR)/stats.sh jeu.log; \
 	else \
-		echo "❌ Fichier $(LOGS_DIR)/jeu.log introuvable. Jouez d'abord une partie!"; \
+		echo "❌ Fichier jeu.log introuvable. Jouez d'abord une partie!"; \
 	fi
 
 stats:
-	@if [ -f "$(LOGS_DIR)/jeu.log" ]; then \
-		awk -f $(SCRIPTS_DIR)/stats.awk $(LOGS_DIR)/jeu.log; \
+	@if [ -f "jeu.log" ]; then \
+		awk -f $(SCRIPTS_DIR)/stats.awk jeu.log; \
 	else \
-		echo "❌ Fichier $(LOGS_DIR)/jeu.log introuvable. Jouez d'abord une partie!"; \
+		echo "❌ Fichier jeu.log introuvable. Jouez d'abord une partie!"; \
 	fi
+
 
 test:
 	@echo "🎮 Lancement du test automatique..."
