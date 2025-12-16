@@ -46,7 +46,7 @@ Cela génère deux binaires :
 2. **Dès le premier joueur connecté** : Un **timer de 30 secondes** se lance (⏱️)
 3. **Deux scénarios possibles** :
    - ✅ Le nombre max de joueurs est atteint → Lancement immédiat
-   - ⏱️ Le timer expire → Lancement avec les joueurs présents + bots pour atteindre le minimum (2 joueurs)
+   - ⏱️ Le timer expire → Lancement avec les joueurs présents + **bots pour atteindre le nombre max de joueurs**
 
 ### Exemple de sortie serveur
 
@@ -64,10 +64,40 @@ Joueurs connectés: 1/4
 ✅ Nouveau joueur connecté: Bob depuis 127.0.0.1:54322
 Joueurs connectés: 2/4
 ⏱️  10 secondes avant lancement auto...
-⏱️  0 secondes avant lancement auto...
+⏱️  5 secondes avant lancement auto...
 
-🤖 Ajout de 0 bot(s)
-🎮 LANCEMENT DE LA PARTIE (timer écoulé) avec 2 joueurs!
+🤖 Ajout de 2 bot(s) pour atteindre 4 joueurs
+  Bot 1 connecté: Bot1
+  Bot 2 connecté: Bot2
+
+🎮 LANCEMENT DE LA PARTIE (timer écoulé) avec 4 joueurs!
+```
+
+## Architecture des Bots
+
+### 🤖 Threads Dédiés
+
+Chaque bot dispose d'un **thread dédié** qui gère son comportement de jeu :
+
+- **1 bot = 1 thread** (si 3 bots dans la partie → 3 threads créés)
+- Chaque thread bot est créé au début de **chaque tour**
+- Le thread joue la carte du bot puis se termine (`pthread_join`)
+- **Synchronisation** : Les threads humains et bots jouent en parallèle, puis le serveur attend que tous aient fini avant de révéler les cartes
+
+### Stratégie IA Simple
+
+Les bots utilisent un algorithme glouton basique :
+- **Choix de carte** : Joue toujours sa **plus petite carte** (index 0 après tri)
+- **Choix de rangée** (si carte trop petite) : Sélectionne la rangée avec le **moins de points de pénalité**
+
+### Logs de Debug
+
+Pendant le jeu, vous verrez :
+```
+🤖 [Thread Bot1] Démarré (PID thread: 140234567890)
+🤖 [Thread Bot1] Joue la carte 15
+✅ [Thread Bot1] Carte 15 enregistrée et retirée
+✅ Bot thread 0 terminé
 ```
 
 ## Lancement des Clients
@@ -101,7 +131,7 @@ Joueurs connectés: 2/4
 
 ## Scénarios de Test
 
-### Scénario 1 : Attendre le timer (2 joueurs humains)
+### Scénario 1 : 1 joueur humain + 3 bots (max 4)
 
 **Terminal 1 - Serveur (max 4 joueurs) :**
 ```bash
@@ -113,16 +143,56 @@ Joueurs connectés: 2/4
 ./client 127.0.0.1 4242 Alice
 ```
 
-*[Attend le timer]* → Au bout de 30 secondes, la partie se lance avec Alice + 1 bot
+*[Attendre 30 secondes - Personne d'autre ne se connecte]*
 
-**Terminal 3 - Bob (optionnel, avant les 30 sec) :**
+→ La partie se lance avec : **Alice + Bot1 + Bot2 + Bot3** (4 joueurs)
+
+### Scénario 2 : 2 joueurs humains + 2 bots (max 4)
+
+**Terminal 1 - Serveur (max 4 joueurs) :**
+```bash
+./serveur 127.0.0.1 4242 4
+```
+
+**Terminal 2 - Alice :**
+```bash
+./client 127.0.0.1 4242 Alice
+```
+
+**Terminal 3 - Bob (dans les 30 sec) :**
 ```bash
 ./client 127.0.0.1 4242 Bob
 ```
 
-Si Bob se connecte dans les 30 secondes → la partie se lance avec Alice + Bob (pas de bot)
+*[Attendre que le timer expire]*
 
-### Scénario 2 : Lancer au max de joueurs
+→ La partie se lance avec : **Alice + Bob + Bot1 + Bot2** (4 joueurs)
+
+### Scénario 3 : Lancer au max de joueurs (sans timer)
+
+**Terminal 1 - Serveur (max 3 joueurs) :**
+```bash
+./serveur 127.0.0.1 4242 3
+```
+
+**Terminal 2 - Alice :**
+```bash
+./client 127.0.0.1 4242 Alice
+```
+
+**Terminal 3 - Bob :**
+```bash
+./client 127.0.0.1 4242 Bob
+```
+
+**Terminal 4 - Charlie (dans les 30 sec) :**
+```bash
+./client 127.0.0.1 4242 Charlie
+```
+
+Dès que Charlie se connecte (3 = max) → **Lancement immédiat** de la partie avec Alice + Bob + Charlie (aucun bot)
+
+### Scénario 4 : Partie à 2 joueurs (minimum)
 
 **Terminal 1 - Serveur (max 2 joueurs) :**
 ```bash
@@ -139,50 +209,99 @@ Si Bob se connecte dans les 30 secondes → la partie se lance avec Alice + Bob 
 ./client 127.0.0.1 4242 Bob
 ```
 
-Dès que Bob se connecte (2 = max) → Lancement immédiat de la partie (sans attendre le timer)
-
-### Scénario 3 : Comblement de bots
-
-**Terminal 1 - Serveur (max 3 joueurs) :**
-```bash
-./serveur 127.0.0.1 4242 3
-```
-
-**Terminal 2 - Alice :**
-```bash
-./client 127.0.0.1 4242 Alice
-```
-
-*[Attendre 30 secondes - Bob ne se connecte pas]*
-
-La partie se lance avec :
-- Alice (joueur humain)
-- Bot1 (créé auto pour atteindre le minimum de 2 joueurs)
+Dès que Bob se connecte (2 = max) → Lancement immédiat avec Alice + Bob (aucun bot)
 
 ## Fichier de Log
 
-Chaque partie est enregistrée dans `jeu.log` avec :
+Chaque partie est enregistrée dans `logs/jeu.log` avec :
 
 - **Connexions** : `[CONNEXION] Joueur 'Alice' depuis 127.0.0.1:54321`
-- **Début de partie** : `[PARTIE] Lancement avec 2 joueurs: Alice, Bob`
+- **Connexions bots** : `[CONNEXION] Joueur 'Bot1' depuis 127.0.0.1:0`
+- **Début de partie** : `[PARTIE] Lancement avec 4 joueurs: Alice, Bot1, Bot2, Bot3`
 - **Fin de partie** : scores finaux et gagnant
 
 ### Consulter les logs
 
 ```bash
-cat jeu.log
-tail -f jeu.log      # en temps réel
+cat logs/jeu.log
+tail -f logs/jeu.log      # en temps réel
 ```
+
+### Générer des statistiques
+
+```bash
+make stats-shell
+```
+
+Cela exécute le script `logs/stats.sh` qui analyse `logs/jeu.log` et affiche :
+- Nombre total de parties jouées
+- Taux de victoire par joueur
+- Statistiques des bots
+- Plus grand nombre de points dans une partie
+
+## Architecture Technique
+
+### Threads
+
+- **Thread principal** : Gère les connexions entrantes
+- **Thread timer** : Lance le compte à rebours de 30 secondes
+- **Thread partie** : Gère la logique du jeu
+- **Threads bots** : 1 thread par bot par tour (créés et détruits dynamiquement)
+
+### Synchronisation
+
+- **Mutex** : Protection des ressources partagées (clients connectés, cartes jouées)
+- **pthread_join** : Attente de fin des threads bots avant révélation des cartes
+
+### Compilation avec POSIX
+
+Le projet utilise `-D_XOPEN_SOURCE=700` pour accéder aux extensions POSIX (threads, barrières, etc.)
 
 ## Nettoyage
 
 ```bash
-make distclean    # Supprime exécutables, objets, fichiers .d ET jeu.log
+make clean        # Supprime objets et exécutables
+make distclean    # Supprime tout + logs
 ```
 
-## Notes
+## Notes Importantes
 
-- Le **minimum de joueurs** est fixé à **2** (défini comme `MIN_JOUEURS` dans Serveur.c)
-- Le **timeout du timer** est fixé à **30 secondes** (défini comme `TIMEOUT_TIMER` dans Serveur.c)
-- Les **bots** se connectent automatiquement au timer pour combler jusqu'au minimum
+- Le **nombre de joueurs au lancement** est **toujours égal à `nb_joueurs_max`**
+- Les bots comblent **jusqu'à `nb_joueurs_max`** (et non plus jusqu'à `MIN_JOUEURS`)
+- Le **timeout du timer** est fixé à **30 secondes** (défini comme `TIMEOUT_TIMER` dans `defines.h`)
 - Les bots sont identifiés par le nom `Bot1`, `Bot2`, etc.
+- Chaque bot possède son propre thread d'exécution pendant les tours de jeu
+
+## Dépannage
+
+### Le serveur ne se lance pas
+```bash
+# Vérifier que le port n'est pas déjà utilisé
+netstat -tuln | grep 4242
+
+# Tuer le processus si nécessaire
+kill -9 $(lsof -t -i:4242)
+```
+
+### Les bots ne jouent pas
+```bash
+# Vérifier que la compilation inclut les flags POSIX
+make clean
+make
+
+# Vérifier les logs de debug dans la sortie du serveur
+```
+
+### La partie ne se lance jamais
+```bash
+# Vérifier que nb_joueurs_max >= MIN_JOUEURS (2)
+./serveur 127.0.0.1 4242 2  # minimum
+```
+
+## Contributeurs
+
+Ce projet a été développé dans le cadre d'un cours de systèmes réseaux avec l'implémentation de :
+- Architecture client-serveur TCP
+- Gestion multi-threads avec synchronisation
+- IA simple pour bots autonomes
+- Logging et analyse de statistiques
