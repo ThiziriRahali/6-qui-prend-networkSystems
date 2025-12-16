@@ -67,25 +67,17 @@ run-client: $(CLIENT_EXEC)
 # Stats
 stats-shell:
 	@if [ -f "jeu.log" ]; then \
-		bash $(SCRIPTS_DIR)/stats.sh jeu.log; \
+		bash $(LOGS_DIR)/stats.sh jeu.log; \
 	else \
 		echo "❌ Fichier jeu.log introuvable. Jouez d'abord une partie!"; \
 	fi
-
-stats:
-	@if [ -f "jeu.log" ]; then \
-		awk -f $(SCRIPTS_DIR)/stats.awk jeu.log; \
-	else \
-		echo "❌ Fichier jeu.log introuvable. Jouez d'abord une partie!"; \
-	fi
-
 
 test:
 	@echo "🎮 Lancement du test automatique..."
 	bash $(SCRIPTS_DIR)/run_test.sh
 
 # Phony targets
-.PHONY: all clean rebuild run-serveur run-client stats-shell stats test info
+.PHONY: all clean rebuild run-serveur run-client stats-shell test info
 
 # Debug
 info:
