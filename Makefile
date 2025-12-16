@@ -7,6 +7,7 @@ LDFLAGS = -pthread
 HEADERS_DIR = headers
 C_DIR = c
 LOGS_DIR = logs
+SCRIPTS_DIR = scripts
 
 # Fichiers serveur (.c)
 SERVEUR_SOURCES = $(C_DIR)/Carte.c $(C_DIR)/Collection.c $(C_DIR)/Joueur.c \
@@ -63,8 +64,27 @@ run-client: $(CLIENT_EXEC)
 	@echo "🚀 Lancement du client..."
 	./$(CLIENT_EXEC) 127.0.0.1 4242 Alice
 
+# Stats
+stats-shell:
+	@if [ -f "$(LOGS_DIR)/jeu.log" ]; then \
+		bash $(SCRIPTS_DIR)/stats.sh; \
+	else \
+		echo "❌ Fichier $(LOGS_DIR)/jeu.log introuvable. Jouez d'abord une partie!"; \
+	fi
+
+stats:
+	@if [ -f "$(LOGS_DIR)/jeu.log" ]; then \
+		awk -f $(SCRIPTS_DIR)/stats.awk $(LOGS_DIR)/jeu.log; \
+	else \
+		echo "❌ Fichier $(LOGS_DIR)/jeu.log introuvable. Jouez d'abord une partie!"; \
+	fi
+
+test:
+	@echo "🎮 Lancement du test automatique..."
+	bash $(SCRIPTS_DIR)/run_test.sh
+
 # Phony targets
-.PHONY: all clean rebuild run-serveur run-client info
+.PHONY: all clean rebuild run-serveur run-client stats-shell stats test info
 
 # Debug
 info:
