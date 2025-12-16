@@ -1,28 +1,35 @@
 # Compilateur et flags
 CC = gcc
-CFLAGS = -Wall -Wextra -Wpedantic -std=c11 -g
+CFLAGS = -Wall -Wextra -Wpedantic -std=c11 -g -I./headers
 LDFLAGS = -pthread
 
-# Fichiers serveur
-# Fichiers serveur
-SERVEUR_SOURCES = Carte.c Collection.c Joueur.c GestionnaireJeu.c jeu.c logging.c \
-                  Serveur.c server_communication.c global.c
+# Répertoires
+HEADERS_DIR = headers
+C_DIR = c
+LOGS_DIR = logs
 
+# Fichiers serveur (.c)
+SERVEUR_SOURCES = $(C_DIR)/Carte.c $(C_DIR)/Collection.c $(C_DIR)/Joueur.c \
+                  $(C_DIR)/GestionnaireJeu.c $(C_DIR)/jeu.c $(C_DIR)/logging.c \
+                  $(C_DIR)/Serveur.c $(C_DIR)/server_communication.c $(C_DIR)/global.c
 
+# Fichiers client (.c)
+CLIENT_SOURCES = $(C_DIR)/client.c $(C_DIR)/global.c
 
-# Fichiers client
-CLIENT_SOURCES = client.c
-
+# Fichiers objets
 SERVEUR_OBJECTS = $(SERVEUR_SOURCES:.c=.o)
 CLIENT_OBJECTS = $(CLIENT_SOURCES:.c=.o)
 
+# Exécutables
 SERVEUR_EXEC = serveur
 CLIENT_EXEC = client
 
-# Headers
-HEADERS = defines.h structures.h methodes.h global.h Carte.h Collection.h \
-          Joueur.h GestionnaireJeu.h jeu.h logging.h protocol.h \
-          server_communication.h
+# Headers (dépendances)
+HEADERS = $(HEADERS_DIR)/defines.h $(HEADERS_DIR)/structures.h \
+          $(HEADERS_DIR)/methodes.h $(HEADERS_DIR)/global.h \
+          $(HEADERS_DIR)/protocol.h $(HEADERS_DIR)/server_communication.h
+
+LOGS_HEADERS = $(LOGS_DIR)/logging.h
 
 # Cibles principales
 all: $(SERVEUR_EXEC) $(CLIENT_EXEC)
@@ -35,9 +42,9 @@ $(CLIENT_EXEC): $(CLIENT_OBJECTS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 	@echo "✅ Client compilé: $@"
 
-%.o: %.c $(HEADERS)
+%.o: %.c $(HEADERS) $(LOGS_HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
-	@echo "📦 Compilé: $<"
+	@echo "💾 Compilé: $<"
 
 # Nettoyage
 clean:
@@ -63,3 +70,5 @@ run-client: $(CLIENT_EXEC)
 info:
 	@echo "Serveur sources: $(SERVEUR_SOURCES)"
 	@echo "Client sources: $(CLIENT_SOURCES)"
+	@echo "Serveur objects: $(SERVEUR_OBJECTS)"
+	@echo "Client objects: $(CLIENT_OBJECTS)"
