@@ -1,0 +1,23 @@
+# Build artifacts
+serveur
+client
+*.o
+*.d
+
+# Stats and logs
+stats.awk
+stats.sh
+run_test.sh
+STATS.md
+jeu.log
+logs/*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
