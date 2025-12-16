@@ -1,4 +1,3 @@
-// client.c : client interactif pour le jeu 6 qui prend
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,7 +37,6 @@ int main(int argc, char *argv[]) {
     int sock;
     struct sockaddr_in serv_addr;
 
-    // Cr\u00e9ation du socket
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1) {
         perror("socket");
@@ -51,14 +49,12 @@ int main(int argc, char *argv[]) {
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(server_port);
 
-    // Conversion de l'adresse IP
     if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0) {
         perror("inet_pton");
         close(sock);
         return EXIT_FAILURE;
     }
 
-    // Connexion au serveur
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1) {
         perror("connect");
         close(sock);
@@ -68,7 +64,6 @@ int main(int argc, char *argv[]) {
     printf("🎮 Connect\u00e9 au serveur %s:%d\n", server_ip, server_port);
     printf("Envoi du nom de joueur: %s\n", nom_joueur);
 
-    // Envoyer le nom du joueur
     ssize_t sent = send(sock, nom_joueur, strlen(nom_joueur), 0);
     if (sent == -1) {
         perror("send");
@@ -78,7 +73,6 @@ int main(int argc, char *argv[]) {
 
     printf("En attente du d\u00e9marrage de la partie...\n\n");
 
-    // Cr\u00e9er les threads de r\u00e9ception et d'envoi
     pthread_t tid_recv, tid_send;
     
     if (pthread_create(&tid_recv, NULL, thread_reception, NULL) != 0) {
@@ -93,23 +87,19 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    // Attendre la fin des threads
     pthread_join(tid_recv, NULL);
     
     pthread_mutex_lock(&mutex_termine);
     partie_terminee = 1;
     pthread_mutex_unlock(&mutex_termine);
     
-    pthread_cancel(tid_send);  // Annuler le thread d'envoi
+    pthread_cancel(tid_send);
     
     close(sock);
     printf("\nFin de la connexion.\n");
     return EXIT_SUCCESS;
 }
 
-/**
- * Thread de r\u00e9ception : affiche les messages du serveur
- */
 void *thread_reception(void *arg) {
     (void)arg;
     char buffer[4096];
@@ -132,9 +122,6 @@ void *thread_reception(void *arg) {
     return NULL;
 }
 
-/**
- * Thread d'envoi : lit l'entr\u00e9e utilisateur et l'envoie au serveur
- */
 void *thread_envoi(void *arg) {
     (void)arg;
     char input[256];
@@ -147,9 +134,7 @@ void *thread_envoi(void *arg) {
         }
         pthread_mutex_unlock(&mutex_termine);
         
-        // Lire l'entr\u00e9e utilisateur
         if (fgets(input, sizeof(input), stdin) != NULL) {
-            // Envoyer au serveur
             ssize_t sent = send(sock_global, input, strlen(input), 0);
             if (sent == -1) {
                 perror("send");
