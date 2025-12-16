@@ -3,7 +3,6 @@
 #include <string.h>
 #include "Carte.h"
 
-/* “méthodes” */
 void Carte_Init(Carte *p, int num, int tete) {
     if(p == NULL) {
         fprintf(stderr, "Erreur: pointeur Carte NULL dans Carte_Init\n");
@@ -17,8 +16,8 @@ void Carte_Init(Carte *p, int num, int tete) {
         fprintf(stderr, "Erreur: teteBoeuf invalide dans Carte_Init\n");
         exit(EXIT_FAILURE);
     }
-    p->valeurNum = num;  // de 1 à 104 //
-    p->teteBoeuf = tete;  // de 1 à 7 //
+    p->valeurNum = num;
+    p->teteBoeuf = tete;
 }
 
 int Carte_getValeurNum(Carte *p) {
@@ -73,11 +72,9 @@ char* Carte_toString(Carte *p) {
         exit(EXIT_FAILURE);
     }
 
-    // Convertir la valeur numérique en string
     char valeur_str[10];
     snprintf(valeur_str, sizeof valeur_str, "%d", Carte_getValeurNum(p));
 
-    // Générer les étoiles
     int nb_tetes = Carte_getValeurTete(p);
     char etoiles[10] = {0};
     for (int i = 0; i < nb_tetes && i < 9; i++) {
@@ -85,24 +82,22 @@ char* Carte_toString(Carte *p) {
     }
     etoiles[nb_tetes > 9 ? 9 : nb_tetes] = '\0';
 
-    // Centrer la valeur numérique
     int len_valeur = strlen(valeur_str);
     int padding_left_val = (8 - len_valeur) / 2;
     int padding_right_val = 8 - len_valeur - padding_left_val;
 
-    char valeur_centree[20];  // Buffer plus grand
+    char valeur_centree[20];
     snprintf(valeur_centree, sizeof valeur_centree,
         "%*s%s%*s",
         padding_left_val, "",
         valeur_str,
         padding_right_val, "");
 
-    // Centrer les étoiles
     int len_etoiles = strlen(etoiles);
     int padding_left_et = (8 - len_etoiles) / 2;
     int padding_right_et = 8 - len_etoiles - padding_left_et;
 
-    char etoiles_centrees[20];  // Buffer plus grand
+    char etoiles_centrees[20];
     snprintf(etoiles_centrees, sizeof etoiles_centrees,
         "%*s%s%*s",
         padding_left_et, "",
