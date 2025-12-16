@@ -17,7 +17,7 @@ echo ""
 
 # 1. Nombre total de parties
 echo "[1] PARTIES"
-NB_PARTIES=$(grep -c "DEBUT DE PARTIE\|=== NOUVEAU JEU" "$LOG_FILE")
+NB_PARTIES=$(grep -c "DÉBUT DE PARTIE\|=== NOUVEAU JEU" "$LOG_FILE")
 echo "  Nombre total de parties: $NB_PARTIES"
 echo ""
 
@@ -72,8 +72,8 @@ echo "[5] TOURS"
 echo "  Analyse des tours:"
 
 awk '
-    /DEBUT DE PARTIE|=== NOUVEAU JEU/ { in_game = 1; tour_count = 0; next }
-    /FIN DE PARTIE|=== FIN DU JEU/ { in_game = 0; if (tour_count > 0) print tour_count; next }
+    /--- DÉBUT DE PARTIE ---/ { in_game = 1; tour_count = 0; next }
+    /--- FIN DE PARTIE ---/ { in_game = 0; if (tour_count > 0) print tour_count; next }
     in_game && /\[TOUR/ { tour_count++ }
 ' "$LOG_FILE" | awk '
     BEGIN { sum = 0; count = 0; min = 999999; max = 0 }
@@ -101,7 +101,7 @@ echo "[6] CHRONOLOGIE"
 # Chercher la première partie avec la date/heure complète après "NOUVEAU JEU"
 FIRST_GAME=$(grep "=== NOUVEAU JEU" "$LOG_FILE" | head -1)
 if [ -n "$FIRST_GAME" ]; then
-    # Extraire tout après "NOUVEAU JEU -"
+    # Extraire tout après "NOUVEAU JEU - "
     FIRST_TIME=$(echo "$FIRST_GAME" | sed 's/.*NOUVEAU JEU - //')
     echo "  Premiere partie: $FIRST_TIME"
 else
