@@ -1,72 +1,78 @@
-# Compilateur et options
-CC       = gcc
-CFLAGS   = -Wall -Wextra -Wpedantic -std=c11 -g -MMD -MP
-LDFLAGS  = -pthread
+CC = gcc
+CFLAGS = -Wall -Wextra -Wpedantic -std=c11 -g -MMD -MP
+LDFLAGS = -pthread
 
-# Fichiers sources communs (utilisés par serveur et client)
-SRC_COMMON = \
-    Carte.c \
-    Collection.c \
-    Joueur.c \
-    GestionnaireJeu.c \
-    global.c \
-    template.c \
-    jeu.c \
-    logging.c
+# ========================================
+# Fichiers sources
+# ========================================
 
-# Fichiers sources spécifiques au serveur
-SRC_SERVER = Serveur.c client_handler.c server_communication.c
+# Fichiers sources COMMUNS (métier du jeu, pas de dépendances serveur)
+SRCCOMMON = Carte.c Collection.c Joueur.c GestionnaireJeu.c global.c jeu.c logging.c
 
-# Fichiers sources spécifiques au client
-SRC_CLIENT = client.c
+# Fichiers sources SPÉCIFIQUES AU SERVEUR
+SRCSERVER = Serveur.c client_handler.c server_communication.c
 
-# Objets
-OBJ_COMMON = $(SRC_COMMON:.c=.o)
-OBJ_SERVER = $(SRC_SERVER:.c=.o)
-OBJ_CLIENT = $(SRC_CLIENT:.c=.o)
+# Fichiers sources SPÉCIFIQUES AU CLIENT
+SRCCLIENT = client.c
 
-DEPS = $(OBJ_COMMON:.o=.d) $(OBJ_SERVER:.o=.d) $(OBJ_CLIENT:.o=.d)
+# ========================================
+# Objets compilés
+# ========================================
 
-# Binaires
+OBJCOMMON = $(SRCCOMMON:.c=.o)
+OBJSERVER = $(SRCSERVER:.c=.o)
+OBJCLIENT = $(SRCCLIENT:.c=.o)
+
+# Fichiers de dépendances
+DEPS = $(OBJCOMMON:.o=.d) $(OBJSERVER:.o=.d) $(OBJCLIENT:.o=.d)
+
+# Cibles finales
 TARGETS = serveur client
 
-# Cible par défaut
+# ========================================
+# Règles de compilation
+# ========================================
+
 all: $(TARGETS) scripts
 
-# Rendre les scripts exécutables
 scripts:
-	chmod +x stats.sh 2>/dev/null || true
+	@chmod +x stats.sh 2>/dev/null; true
 
-# Binaire serveur
-serveur: $(OBJ_COMMON) $(OBJ_SERVER)
+# SERVEUR : inclut objets communs + serveur + communication
+serveur: $(OBJCOMMON) $(OBJSERVER)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
-# Binaire client
-client: $(OBJ_COMMON) $(OBJ_CLIENT)
+# CLIENT : inclut UNIQUEMENT objets communs + client (PAS server_communication.o)
+client: $(OBJCOMMON) $(OBJCLIENT)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
-# Règle générique pour compiler les .c en .o + .d
+# Compilation générique .c → .o
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-# Inclure les fichiers de dépendances (silencieusement)
+# Inclusion des fichiers de dépendances
 -include $(DEPS)
 
-# Cible pour afficher les stats avec le script shell
+# ========================================
+# Cibles auxiliaires
+# ========================================
+
 stats-shell:
 	@if [ -f jeu.log ]; then \
 		./stats.sh jeu.log; \
 	else \
-		echo "Erreur: fichier jeu.log non trouve"; \
-		echo "Remarque: Joue quelques parties pour generer jeu.log"; \
+		echo "❌ Erreur: fichier jeu.log non trouvé"; \
+		echo "💡 Remarque: Joue quelques parties pour générer jeu.log"; \
 	fi
 
-# Nettoyage
 clean:
 	rm -f *.o *.d $(TARGETS)
 
-# Nettoyage complet
 distclean: clean
 	rm -f jeu.log
+
+# ========================================
+# Déclaration des cibles non-fichier
+# ========================================
 
 .PHONY: all clean distclean scripts stats-shell

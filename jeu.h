@@ -50,6 +50,8 @@
 #define NB_CARTES_PAR_JOUEUR 10
 #define NB_TOURS 10
 #define DECK_TOTAL 104
+#define POINTS_LIMITE 66  // Règle officielle
+
 
 // Structure d'une rangée (pile de cartes)
 typedef struct {
@@ -77,14 +79,8 @@ typedef struct {
 // Initialisation du jeu
 void Jeu_Init(Jeu *jeu, Joueur *joueurs, int nbJoueurs);
 
-// Appliquer un tour complet avec les cartes jouées
-void Jeu_appliquerTour(Jeu *jeu, Carte *cartes_jouees, int *indices_rangees);
-
 // Jouer un tour complet
 void Jeu_jouerTour(Jeu *jeu);
-
-// Placer une carte sur une rangée
-void Jeu_placerCarte(Rangee *rangee, Carte carte);
 
 // Trouver la meilleure rangée pour une carte
 int Jeu_trouverMeilleureRangee(TableJeu *table, Carte carte);

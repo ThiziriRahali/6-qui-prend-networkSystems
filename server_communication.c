@@ -3,14 +3,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <stdarg.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <signal.h>
+
 #include "protocol.h"
 #include "Joueur.h"
 #include "jeu.h"
 #include "Collection.h"
+
 
 // Variables externes du serveur (definis dans Serveur.c)
 extern int nb_clients;
@@ -144,27 +146,6 @@ void ServerComm_AnnonceTurn(const char *joueur_nom, int num_tour) {
     ServerComm_BroadcastMessage("[Tour %d] %s joue...", num_tour, joueur_nom);
 }
 
-/**
- * Annoncer une carte jouee
- */
-void ServerComm_AnnonceCardPlayed(const char *joueur_nom, int carte_valeur, int rangee) {
-    ServerComm_BroadcastMessage("%s joue la carte %d -> Rangee %d", 
-                                joueur_nom, carte_valeur, rangee);
-}
-
-/**
- * Annoncer la fin d'une manche
- */
-void ServerComm_AnnounceRoundEnd(int num_manche, Joueur *joueurs, int nb_joueurs) {
-    if (!joueurs) return;
-
-    ServerComm_BroadcastMessage("\n=== MANCHE %d TERMINEE ===", num_manche);
-    ServerComm_BroadcastMessage("Scores actuels:");
-    for (int i = 0; i < nb_joueurs; i++) {
-        ServerComm_BroadcastMessage("  %s: %d points", joueurs[i].nom, joueurs[i].score);
-    }
-    ServerComm_BroadcastMessage("");
-}
 
 /**
  * Annoncer la fin de la partie
@@ -185,13 +166,38 @@ void ServerComm_AnnounceGameEnd(const char *gagnant_nom, int gagnant_score,
     ServerComm_BroadcastMessage("");
 }
 
-/**
- * Demander une carte a un joueur (pour le robot/client)
- */
-int ServerComm_RequestCard(int client_index) {
-    if (client_index < 0 || client_index >= nb_clients) return -1;
 
-    // Pour l'instant, juste informer qu'on attend une carte
-    ServerComm_SendToClient(client_index, "[Attente de votre carte...]");
-    return 0;
+/**
+ * Fermer tous les clients et expulser tout le monde
+ * Appelée quand un joueur se déconnecte pendant la partie
+ */
+void ServerComm_DisconnectAllClients(const char *reason) {
+    if (!reason) {
+        reason = "Un joueur s'est deconnecte, la partie est interrompue.";
+    }
+    
+    printf("\n❌ Interruption de la partie...\n");
+    printf("   Raison: %s\n", reason);
+    printf("   Expulsion de tous les joueurs...\n\n");
+    
+    // Envoyer le message à tous les clients AVANT de fermer
+    ServerComm_BroadcastMessage("=== PARTIE INTERROMPUE ===");
+    ServerComm_BroadcastMessage("%s", reason);
+    ServerComm_BroadcastMessage("Tous les joueurs vont être déconnectés.");
+    
+    // Attendre un peu pour que les clients reçoivent le message
+    fflush(stdout);
+    sleep(1);
+    
+    // ✅ APRÈS (sans mutex):
+    for (int i = 0; i < nb_clients; i++) {
+        if (clients_connectes[i] && clients_connectes[i]->sock != -1) {
+            printf("   Fermeture socket client %d (%s)\n", i, clients_connectes[i]->nom);
+            close(clients_connectes[i]->sock);
+            clients_connectes[i]->sock = -1;
+        }
+    }
+
+    
+    printf("✅ Tous les clients ont été expulsés.\n\n");
 }

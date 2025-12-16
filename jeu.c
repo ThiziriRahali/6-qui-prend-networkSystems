@@ -6,26 +6,31 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include "server_communication.h"
 
 /* ============ FONCTIONS RÉSEAU ============ */
 
-/* Envoyer un message à un client */
 static int envoyer_message(int socket, const char *message) {
-    if (socket == -1) return -1;  // Bot, pas de socket
+    if (socket == -1) return -1;
     ssize_t sent = send(socket, message, strlen(message), 0);
     return (sent == -1) ? -1 : 0;
 }
 
-/* Recevoir un message d'un client */
 static int recevoir_message(int socket, char *buffer, size_t max_len) {
-    if (socket == -1) return -1;  // Bot, pas de socket
+    if (socket == -1) return -1;
     ssize_t received = recv(socket, buffer, max_len - 1, 0);
-    if (received <= 0) return -1;
+    
+    if (received <= 0) {
+        printf("\n⚠️ Un joueur s'est déconnecté, fin de la partie.\n\n");
+        fflush(stdout);
+        return -1;
+    }
+    
     buffer[received] = '\0';
-    // Supprimer le newline
     if (buffer[received - 1] == '\n') {
         buffer[received - 1] = '\0';
     }
+    
     return 0;
 }
 
@@ -44,24 +49,20 @@ void Jeu_Init(Jeu *jeu, Joueur *joueurs, int nbJoueurs) {
     jeu->nbJoueurs = nbJoueurs;
     jeu->tourActuel = 0;
     
-    // Initialiser les 4 rangées
     for (int i = 0; i < NB_RANGEES_JEU; i++) {
         Rangee_Init(&jeu->table.rangees[i]);
     }
     
-    // Créer le deck de 104 cartes
     Carte *deck_cartes = malloc(DECK_TOTAL * sizeof(Carte));
     if (!deck_cartes) {
         fprintf(stderr, "Erreur allocation deck\n");
         return;
     }
     
-    // Initialiser le deck avec les cartes 1-104
     for (int i = 0; i < DECK_TOTAL; i++) {
         Carte_InitNum(&deck_cartes[i], i + 1);
     }
     
-    // Mélanger le deck (Fisher-Yates)
     srand(time(NULL) + getpid());
     for (int i = DECK_TOTAL - 1; i > 0; i--) {
         int j = rand() % (i + 1);
@@ -70,10 +71,8 @@ void Jeu_Init(Jeu *jeu, Joueur *joueurs, int nbJoueurs) {
         deck_cartes[j] = temp;
     }
     
-    // Distribuer 10 cartes à chaque joueur
     int carte_index = 0;
     for (int j = 0; j < nbJoueurs; j++) {
-        // Allouer l'espace pour les cartes du joueur
         joueurs[j].jeuCartes.cartes = malloc(NB_CARTES_PAR_JOUEUR * sizeof(Carte));
         if (!joueurs[j].jeuCartes.cartes) {
             fprintf(stderr, "Erreur allocation cartes joueur %d\n", j);
@@ -82,13 +81,12 @@ void Jeu_Init(Jeu *jeu, Joueur *joueurs, int nbJoueurs) {
         
         joueurs[j].jeuCartes.nbCartes = NB_CARTES_PAR_JOUEUR;
         joueurs[j].jeuCartes.maxCartes = NB_CARTES_PAR_JOUEUR;
-        joueurs[j].id = j;  // Définir l'ID
+        joueurs[j].id = j;
         
         for (int c = 0; c < NB_CARTES_PAR_JOUEUR; c++) {
             joueurs[j].jeuCartes.cartes[c] = deck_cartes[carte_index++];
         }
         
-        // Trier la main du joueur par valeur croissante
         for (int a = 0; a < joueurs[j].jeuCartes.nbCartes - 1; a++) {
             for (int b = a + 1; b < joueurs[j].jeuCartes.nbCartes; b++) {
                 if (joueurs[j].jeuCartes.cartes[a].valeurNum > joueurs[j].jeuCartes.cartes[b].valeurNum) {
@@ -99,13 +97,12 @@ void Jeu_Init(Jeu *jeu, Joueur *joueurs, int nbJoueurs) {
             }
         }
         
-        // Envoyer la main au joueur humain (AVEC indices)
         if (!joueurs[j].is_bot) {
             char msg[2048];
             snprintf(msg, sizeof(msg), "\n=== Ta main ===\n");
             envoyer_message(joueurs[j].socket, msg);
             
-            char *main_str = Collection_toString(&joueurs[j].jeuCartes, 1);  // 1 = afficher indices
+            char *main_str = Collection_toString(&joueurs[j].jeuCartes, 1);
             if (main_str) {
                 envoyer_message(joueurs[j].socket, main_str);
                 envoyer_message(joueurs[j].socket, "\n");
@@ -114,12 +111,10 @@ void Jeu_Init(Jeu *jeu, Joueur *joueurs, int nbJoueurs) {
         }
     }
     
-    // Placer 4 cartes initiales sur les rangées
     for (int i = 0; i < NB_RANGEES_JEU; i++) {
         Rangee_ajouterCarte(&jeu->table.rangees[i], deck_cartes[carte_index++]);
     }
     
-    // Sauvegarder le reste du deck
     jeu->deck.cartes = deck_cartes;
     jeu->deck.nbCartes = DECK_TOTAL;
     jeu->deck.maxCartes = DECK_TOTAL;
@@ -127,13 +122,60 @@ void Jeu_Init(Jeu *jeu, Joueur *joueurs, int nbJoueurs) {
     printf("\n🎮 Jeu initialisé avec %d joueurs\n", nbJoueurs);
     printf("📊 Cartes distribuées: %d cartes par joueur\n", NB_CARTES_PAR_JOUEUR);
     printf("🃏 Rangées initiales placées\n\n");
+    
+    printf("\n═══════════════════════════════════════\n");
+printf("  📊 ÉTAT INITIAL DU PLATEAU 📊\n");
+printf("═══════════════════════════════════════\n\n");
+Jeu_afficherTableau(&jeu->table);
+
+// Envoyer aux clients
+for (int i = 0; i < nbJoueurs; i++) {
+    if (!joueurs[i].is_bot) {
+        char msg[4096];
+        snprintf(msg, sizeof(msg), "\n═══════════════════════════════════════\n");
+        envoyer_message(joueurs[i].socket, msg);
+        snprintf(msg, sizeof(msg), "  📊 ÉTAT INITIAL DU PLATEAU 📊\n");
+        envoyer_message(joueurs[i].socket, msg);
+        snprintf(msg, sizeof(msg), "═══════════════════════════════════════\n\n");
+        envoyer_message(joueurs[i].socket, msg);
+        
+        for (int r = 0; r < NB_RANGEES_JEU; r++) {
+            Rangee *rangee = &jeu->table.rangees[r];
+            int pts = Rangee_getTetesBoeuf(rangee);
+            snprintf(msg, sizeof(msg), "Rangée %d [%d 🐮]:\n", r + 1, pts);
+            envoyer_message(joueurs[i].socket, msg);
+            
+            if (rangee->nbCartes > 0) {
+                Collection c;
+                c.cartes = rangee->cartes;
+                c.nbCartes = rangee->nbCartes;
+                c.maxCartes = NB_CARTES_MAX_RANGEE;
+                
+                char *rangee_str = Collection_toString(&c, 0);
+                if (rangee_str) {
+                    envoyer_message(joueurs[i].socket, rangee_str);
+                    free(rangee_str);
+                }
+            } else {
+                snprintf(msg, sizeof(msg), "(vide)\n");
+                envoyer_message(joueurs[i].socket, msg);
+            }
+        }
+        
+        snprintf(msg, sizeof(msg), "\n⏳ En attente du démarrage du jeu...\n");
+        envoyer_message(joueurs[i].socket, msg);
+    }
+}
+
+sleep(3);
+
+
 }
 
 /* ============ RANGÉES ============ */
 
 void Rangee_ajouterCarte(Rangee *rangee, Carte carte) {
     if (rangee == NULL || rangee->nbCartes >= NB_CARTES_MAX_RANGEE) return;
-    
     rangee->cartes[rangee->nbCartes] = carte;
     rangee->nbCartes++;
 }
@@ -149,7 +191,6 @@ Carte Rangee_derniereCarte(Rangee *rangee) {
 
 int Rangee_getTetesBoeuf(Rangee *rangee) {
     if (rangee == NULL) return 0;
-    
     int total = 0;
     for (int i = 0; i < rangee->nbCartes; i++) {
         total += rangee->cartes[i].teteBoeuf;
@@ -157,7 +198,6 @@ int Rangee_getTetesBoeuf(Rangee *rangee) {
     return total;
 }
 
-/* Helper: convertir une Rangée en Collection */
 static Collection Rangee_asCollection(Rangee *rangee) {
     Collection c;
     c.cartes = rangee->cartes;
@@ -174,17 +214,13 @@ int Jeu_trouverMeilleureRangee(TableJeu *table, Carte carte) {
     int meilleure_rangee = -1;
     int min_difference = INT_MAX;
     
-    // RÈGLE: Chercher la rangée avec la PLUS PETITE différence
     for (int i = 0; i < NB_RANGEES_JEU; i++) {
         Rangee *rangee = &table->rangees[i];
-        
         if (rangee->nbCartes == 0) continue;
         
         Carte derniere = Rangee_derniereCarte(rangee);
-        
         if (carte.valeurNum > derniere.valeurNum) {
             int difference = carte.valeurNum - derniere.valeurNum;
-            
             if (difference < min_difference) {
                 min_difference = difference;
                 meilleure_rangee = i;
@@ -192,14 +228,12 @@ int Jeu_trouverMeilleureRangee(TableJeu *table, Carte carte) {
         }
     }
     
-    return meilleure_rangee;  // -1 si carte trop petite
+    return meilleure_rangee;
 }
 
-/* Demander au joueur de choisir une rangée (carte trop petite) */
 int Jeu_choisirRangee(Joueur *joueur, TableJeu *table) {
-    printf("\n⚠️  %s : Carte trop petite, doit choisir une rangée\n", joueur->nom);
+    printf("\n⚠️ %s : Carte trop petite, doit choisir une rangée\n", joueur->nom);
     
-    // Si c'est un bot, choisir la rangée avec le moins de points
     if (joueur->is_bot) {
         int min_pts = INT_MAX;
         int meilleure = 0;
@@ -210,16 +244,14 @@ int Jeu_choisirRangee(Joueur *joueur, TableJeu *table) {
                 meilleure = i;
             }
         }
-        printf("  Bot choisit rangée %d (%d pts)\n", meilleure + 1, min_pts);
+        printf(" Bot choisit rangée %d (%d pts)\n", meilleure + 1, min_pts);
         return meilleure;
     }
     
-    // Envoyer l'état du tableau au joueur
     char msg[4096];
-    snprintf(msg, sizeof(msg), "\n⚠️  Ta carte est trop petite ! Choisis une rangée à prendre (1-4):\n\n");
+    snprintf(msg, sizeof(msg), "\n⚠️ Ta carte est trop petite ! Choisis une rangée à prendre (1-4):\n\n");
     envoyer_message(joueur->socket, msg);
     
-    // Envoyer le tableau (SANS indices)
     for (int i = 0; i < NB_RANGEES_JEU; i++) {
         Rangee *rangee = &table->rangees[i];
         int pts = Rangee_getTetesBoeuf(rangee);
@@ -228,7 +260,7 @@ int Jeu_choisirRangee(Joueur *joueur, TableJeu *table) {
         
         if (rangee->nbCartes > 0) {
             Collection c = Rangee_asCollection(rangee);
-            char *rangee_str = Collection_toString(&c, 0);  // 0 = PAS d'indices
+            char *rangee_str = Collection_toString(&c, 0);
             if (rangee_str) {
                 envoyer_message(joueur->socket, rangee_str);
                 envoyer_message(joueur->socket, "\n");
@@ -243,20 +275,25 @@ int Jeu_choisirRangee(Joueur *joueur, TableJeu *table) {
     snprintf(msg, sizeof(msg), "\nTon choix (1-4): ");
     envoyer_message(joueur->socket, msg);
     
-    // Recevoir le choix
     char buffer[32];
     int choix = -1;
+    
     while (choix < 1 || choix > 4) {
-        if (recevoir_message(joueur->socket, buffer, sizeof(buffer)) == 0) {
-            choix = atoi(buffer);
-            if (choix < 1 || choix > 4) {
-                snprintf(msg, sizeof(msg), "Choix invalide. Réessaie (1-4): ");
-                envoyer_message(joueur->socket, msg);
-            }
+        int recv_result = recevoir_message(joueur->socket, buffer, sizeof(buffer));
+        
+        if (recv_result != 0) {
+            printf("\n❌ %s s'est deconnecte!\n", joueur->nom);
+            return -1;
+        }
+        
+        choix = atoi(buffer);
+        if (choix < 1 || choix > 4) {
+            snprintf(msg, sizeof(msg), "Choix invalide. Réessaie (1-4): ");
+            envoyer_message(joueur->socket, msg);
         }
     }
     
-    printf("  %s choisit rangée %d\n", joueur->nom, choix);
+    printf(" %s choisit rangée %d\n", joueur->nom, choix);
     return choix - 1;
 }
 
@@ -264,18 +301,16 @@ int Jeu_choisirRangee(Joueur *joueur, TableJeu *table) {
 
 void Jeu_prendreRangee(Joueur *joueur, Rangee *rangee) {
     if (joueur == NULL || rangee == NULL) return;
-
+    
     int points = Rangee_getTetesBoeuf(rangee);
-
     printf("\n❌ %s prend la rangée (%d pts)\n", joueur->nom, points);
     
-    // Notifier le joueur
     if (!joueur->is_bot) {
         char msg[512];
         snprintf(msg, sizeof(msg), "\n❌ Tu prends la rangée ! +%d points\n", points);
         envoyer_message(joueur->socket, msg);
     }
-
+    
     joueur->score += points;
     Rangee_Init(rangee);
 }
@@ -285,48 +320,127 @@ int Jeu_calculerPointsRangee(Rangee *rangee) {
     return Rangee_getTetesBoeuf(rangee);
 }
 
-/* ============ DÉROULEMENT DU JEU ============ */
+/* ============ RÉINITIALISATION DE MANCHE ============ */
 
-void Jeu_jouerTour(Jeu *jeu) {
-    if (jeu == NULL || jeu->tourActuel >= NB_TOURS) return;
+void Jeu_reinitialiserManche(Jeu *jeu) {
+    if (jeu == NULL) return;
     
-    jeu->tourActuel++;
-    printf("\n\n");
-    printf("══════════════════════════\n");
-    printf("║   🎯 TOUR %d/%d   ║\n", jeu->tourActuel, NB_TOURS);
-    printf("══════════════════════════\n");
+    printf("\n\n═══════════════════════════════════════\n");
+    printf("  🎰 NOUVELLE MANCHE 🎰\n");
+    printf("═══════════════════════════════════════\n\n");
     
-    // Envoyer l'état du tableau à tous les joueurs (SANS indices)
-    char msg[4096];
-    for (int i = 0; i < jeu->nbJoueurs; i++) {
-        if (!jeu->joueurs[i].is_bot) {
-            snprintf(msg, sizeof(msg), "\n=== TOUR %d/%d ===\n\n", jeu->tourActuel, NB_TOURS);
-            envoyer_message(jeu->joueurs[i].socket, msg);
-            
-            // Envoyer le tableau
-            for (int r = 0; r < NB_RANGEES_JEU; r++) {
-                Rangee *rangee = &jeu->table.rangees[r];
-                int pts = Rangee_getTetesBoeuf(rangee);
-                snprintf(msg, sizeof(msg), "Rangée %d [%d pts]:\n", r + 1, pts);
-                envoyer_message(jeu->joueurs[i].socket, msg);
-                
-                if (rangee->nbCartes > 0) {
-                    Collection c = Rangee_asCollection(rangee);
-                    char *rangee_str = Collection_toString(&c, 0);  // 0 = PAS d'indices
-                    if (rangee_str) {
-                        envoyer_message(jeu->joueurs[i].socket, rangee_str);
-                        envoyer_message(jeu->joueurs[i].socket, "\n");
-                        free(rangee_str);
-                    }
-                } else {
-                    snprintf(msg, sizeof(msg), "(vide)\n");
-                    envoyer_message(jeu->joueurs[i].socket, msg);
+    // Vider les 4 rangées
+    for (int i = 0; i < NB_RANGEES_JEU; i++) {
+        Rangee_Init(&jeu->table.rangees[i]);
+    }
+    
+    // Réinitialiser le deck
+    if (jeu->deck.cartes != NULL) {
+        free(jeu->deck.cartes);
+    }
+    
+    Carte *deck_cartes = malloc(DECK_TOTAL * sizeof(Carte));
+    if (!deck_cartes) {
+        fprintf(stderr, "❌ Erreur allocation deck\n");
+        return;
+    }
+    
+    // Créer les 104 cartes
+    for (int i = 0; i < DECK_TOTAL; i++) {
+        Carte_InitNum(&deck_cartes[i], i + 1);
+    }
+    
+    // Mélanger (Fisher-Yates)
+    srand(time(NULL) + getpid());
+    for (int i = DECK_TOTAL - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        Carte temp = deck_cartes[i];
+        deck_cartes[i] = deck_cartes[j];
+        deck_cartes[j] = temp;
+    }
+    
+    // Distribuer 10 cartes à chaque joueur
+    int carte_index = 0;
+    for (int j = 0; j < jeu->nbJoueurs; j++) {
+        Joueur *joueur = &jeu->joueurs[j];
+        
+        // Vider la main actuelle
+        if (joueur->jeuCartes.cartes != NULL) {
+            free(joueur->jeuCartes.cartes);
+        }
+        
+        // Allouer l'espace pour les 10 nouvelles cartes
+        joueur->jeuCartes.cartes = malloc(NB_CARTES_PAR_JOUEUR * sizeof(Carte));
+        if (!joueur->jeuCartes.cartes) {
+            fprintf(stderr, "❌ Erreur allocation cartes joueur %d\n", j);
+            continue;
+        }
+        
+        joueur->jeuCartes.nbCartes = NB_CARTES_PAR_JOUEUR;
+        joueur->jeuCartes.maxCartes = NB_CARTES_PAR_JOUEUR;
+        
+        // Distribuer les cartes
+        for (int c = 0; c < NB_CARTES_PAR_JOUEUR; c++) {
+            joueur->jeuCartes.cartes[c] = deck_cartes[carte_index++];
+        }
+        
+        // Trier par valeur croissante
+        for (int a = 0; a < joueur->jeuCartes.nbCartes - 1; a++) {
+            for (int b = a + 1; b < joueur->jeuCartes.nbCartes; b++) {
+                if (joueur->jeuCartes.cartes[a].valeurNum > joueur->jeuCartes.cartes[b].valeurNum) {
+                    Carte temp = joueur->jeuCartes.cartes[a];
+                    joueur->jeuCartes.cartes[a] = joueur->jeuCartes.cartes[b];
+                    joueur->jeuCartes.cartes[b] = temp;
                 }
+            }
+        }
+        
+        // Envoyer la nouvelle main
+        if (!joueur->is_bot) {
+            char msg[2048];
+            snprintf(msg, sizeof(msg), "\n🎰 === NOUVELLE MANCHE ===\nTa nouvelle main:\n");
+            envoyer_message(joueur->socket, msg);
+            
+            char *main_str = Collection_toString(&joueur->jeuCartes, 1);
+            if (main_str) {
+                envoyer_message(joueur->socket, main_str);
+                envoyer_message(joueur->socket, "\n");
+                free(main_str);
             }
         }
     }
     
-    Jeu_afficherTableau(&jeu->table);
+    // Placer 4 cartes initiales
+    for (int i = 0; i < NB_RANGEES_JEU; i++) {
+        Rangee_ajouterCarte(&jeu->table.rangees[i], deck_cartes[carte_index++]);
+    }
+    
+    // Sauvegarder le deck
+    jeu->deck.cartes = deck_cartes;
+    jeu->deck.nbCartes = DECK_TOTAL;
+    jeu->deck.maxCartes = DECK_TOTAL;
+    
+    printf("✅ Manche réinitialisée!\n");
+    printf("📊 Scores conservés:\n");
+    for (int i = 0; i < jeu->nbJoueurs; i++) {
+        printf("   %s: %d points\n", jeu->joueurs[i].nom, jeu->joueurs[i].score);
+    }
+    printf("\n");
+}
+
+/* ============ DÉROULEMENT DU JEU ============ */
+
+void Jeu_jouerTour(Jeu *jeu) {
+    if (jeu == NULL || Jeu_estTermine(jeu)) return;
+    
+    jeu->tourActuel++;
+    
+    printf("\n\n");
+    printf("══════════════════════════\n");
+    printf("║ 🎯 TOUR %d ║\n", jeu->tourActuel);
+    printf("══════════════════════════\n\n");
+    
+    char msg[4096];
     
     typedef struct {
         Carte carte;
@@ -339,55 +453,97 @@ void Jeu_jouerTour(Jeu *jeu) {
         return;
     }
     
+    // 📊 AFFICHER LES RANGÉES AU DÉBUT DU TOUR
+    Jeu_afficherTableau(&jeu->table);
+    Jeu_afficherScores(jeu);
+    
+    sleep(2);
+    
     printf("\n🎴 Sélection des cartes...\n\n");
     
-    // 1. Chaque joueur choisit une carte (SANS validation)
+    // 1. PHASE DE SÉLECTION
     for (int i = 0; i < jeu->nbJoueurs; i++) {
         Joueur *joueur = &jeu->joueurs[i];
         
-        if (joueur->jeuCartes.nbCartes == 0) continue;
+        for (int j = 0; j < jeu->nbJoueurs; j++) {
+            if (!jeu->joueurs[j].is_bot) {
+                if (i == j) {
+                    // C'est au tour de ce joueur
+                    snprintf(msg, sizeof(msg), "\n⏳ C'est à TON TOUR de choisir une carte!\n");
+                    envoyer_message(jeu->joueurs[j].socket, msg);
+                } else if (j > i) {
+                    // Ceux qui n'ont pas encore joué attendent
+                    snprintf(msg, sizeof(msg), "⏳ En attente de %s...\n", joueur->nom);
+                    envoyer_message(jeu->joueurs[j].socket, msg);
+                }
+                envoyer_message(jeu->joueurs[j].socket, msg);
+            }
+        }
+        
+        if (joueur->jeuCartes.nbCartes == 0) {
+            printf("⚠️ %s n'a plus de cartes! Redistribution...\n", joueur->nom);
+            
+            for (int c = 0; c < NB_CARTES_PAR_JOUEUR && jeu->deck.nbCartes > 0; c++) {
+                joueur->jeuCartes.cartes[c] = jeu->deck.cartes[jeu->deck.nbCartes - 1];
+                jeu->deck.nbCartes--;
+                joueur->jeuCartes.nbCartes++;
+            }
+            
+            if (joueur->jeuCartes.nbCartes == 0) {
+                printf("❌ Pas assez de cartes dans le deck! Fin de manche.\n");
+                free(cartes_jouees);
+                return;
+            }
+            
+            printf("✅ %s a reçu %d cartes\n", joueur->nom, joueur->jeuCartes.nbCartes);
+        }
         
         int choix_carte = -1;
         
         if (joueur->is_bot) {
-            // Bot: jouer la plus petite carte
             choix_carte = 0;
-            printf("  Bot %s joue sa carte\n", joueur->nom);
+            printf(" 🤖 Bot %s joue sa carte\n", joueur->nom);
+            sleep(1);
         } else {
-            // Humain: demander via le réseau (AVEC indices)
-            snprintf(msg, sizeof(msg), "\n=== C'est ton tour %s ! ===\n\nTa main:\n", joueur->nom);
+            snprintf(msg, sizeof(msg), "=== C'est ton tour %s ! ===\nTa main:\n", joueur->nom);
             envoyer_message(joueur->socket, msg);
             
-            char *main_str = Collection_toString(&joueur->jeuCartes, 1);  // 1 = afficher indices
+            char *main_str = Collection_toString(&joueur->jeuCartes, 1);
             if (main_str) {
                 envoyer_message(joueur->socket, main_str);
-                envoyer_message(joueur->socket, "\n");
                 free(main_str);
             }
             
-            snprintf(msg, sizeof(msg), "\nChoisis une carte (1-%d): ", joueur->jeuCartes.nbCartes);
+            snprintf(msg, sizeof(msg), "Choisis une carte (1-%d): ", joueur->jeuCartes.nbCartes);
             envoyer_message(joueur->socket, msg);
             
             char buffer[32];
             choix_carte = -1;
             
-            // Valider le choix (dans la plage)
             while (choix_carte < 1 || choix_carte > joueur->jeuCartes.nbCartes) {
-                if (recevoir_message(joueur->socket, buffer, sizeof(buffer)) == 0) {
-                    choix_carte = atoi(buffer);
-                    if (choix_carte < 1 || choix_carte > joueur->jeuCartes.nbCartes) {
-                        snprintf(msg, sizeof(msg), "Choix invalide ! (1-%d): ", joueur->jeuCartes.nbCartes);
-                        envoyer_message(joueur->socket, msg);
-                    }
+                int recv_result = recevoir_message(joueur->socket, buffer, sizeof(buffer));
+                
+                if (recv_result != 0) {
+                    printf("\n❌ %s s'est deconnecte pendant la partie!\n", joueur->nom);
+                    free(cartes_jouees);
+                    return;
+                }
+                
+                choix_carte = atoi(buffer);
+                
+                if (choix_carte < 1 || choix_carte > joueur->jeuCartes.nbCartes) {
+                    snprintf(msg, sizeof(msg), "Choix invalide ! (1-%d): ", joueur->jeuCartes.nbCartes);
+                    envoyer_message(joueur->socket, msg);
+                    choix_carte = -1;
                 }
             }
-            choix_carte--;  // Index 0-based
             
-            printf("  %s a choisi sa carte\n", joueur->nom);
-            
-            snprintf(msg, sizeof(msg), "\nCarte posée face cachée ! En attente des autres joueurs...\n");
-            envoyer_message(joueur->socket, msg);
+            choix_carte--;
         }
+        
+        printf(" %s a choisi sa carte\n", joueur->nom);
+        snprintf(msg, sizeof(msg), "\n✅ Carte posée face cachée ! En attente des autres joueurs...\n");
+        envoyer_message(joueur->socket, msg);
         
         cartes_jouees[i].carte = joueur->jeuCartes.cartes[choix_carte];
         cartes_jouees[i].joueur_id = i;
@@ -395,9 +551,14 @@ void Jeu_jouerTour(Jeu *jeu) {
         Joueur_retirerCarte(joueur, choix_carte);
     }
     
-    printf("\n🔄 Révélation et placement des cartes...\n\n");
+    system("clear");
+    printf("\n═══════════════════════════════════════\n");
+    printf("  🔄 RÉVÉLATION DES CARTES 🔄\n");
+    printf("═══════════════════════════════════════\n\n");
     
-    // 2. Trier les cartes par valeur croissante
+    sleep(2);
+    
+    // 2. TRIER LES CARTES par valeur croissante
     for (int i = 0; i < jeu->nbJoueurs - 1; i++) {
         for (int j = i + 1; j < jeu->nbJoueurs; j++) {
             if (cartes_jouees[i].carte.valeurNum > cartes_jouees[j].carte.valeurNum) {
@@ -408,108 +569,178 @@ void Jeu_jouerTour(Jeu *jeu) {
         }
     }
     
-    // 3. Placer chaque carte dans l'ordre croissant
+    // 3. PHASE DE PLACEMENT
     for (int i = 0; i < jeu->nbJoueurs; i++) {
         Carte carte = cartes_jouees[i].carte;
         int joueur_id = cartes_jouees[i].joueur_id;
         Joueur *joueur = &jeu->joueurs[joueur_id];
         
-        printf("%s joue: %d\n", joueur->nom, carte.valeurNum);
+        printf("📌 %s joue: %d\n", joueur->nom, carte.valeurNum);
         
         int rangee_idx = Jeu_trouverMeilleureRangee(&jeu->table, carte);
         
         if (rangee_idx == -1) {
             rangee_idx = Jeu_choisirRangee(joueur, &jeu->table);
+            
+            if (rangee_idx == -1) {
+                printf("❌ Joueur déconnecté, partie interrompue!\n");
+                free(cartes_jouees);
+                return;
+            }
+            
             Rangee *rangee = &jeu->table.rangees[rangee_idx];
+            int points = Rangee_getTetesBoeuf(rangee);
+            
+            printf("\n💥 %s - CARTE TROP PETITE (%d) !\n", joueur->nom, carte.valeurNum);
+            printf("   → Prend la rangée %d et empoche %d tête(s) de boeuf 🐮\n\n", rangee_idx + 1, points);
+            
+            for (int j = 0; j < jeu->nbJoueurs; j++) {
+                if (!jeu->joueurs[j].is_bot) {
+                    snprintf(msg, sizeof(msg), "\n💥 %s - Carte %d trop petite!\n   → Prend la rangée %d et empoche %d tête(s) de boeuf 🐮\n", 
+                             joueur->nom, carte.valeurNum, rangee_idx + 1, points);
+                    envoyer_message(jeu->joueurs[j].socket, msg);
+                }
+            }
+            
             Jeu_prendreRangee(joueur, rangee);
             Rangee_ajouterCarte(rangee, carte);
-            printf("✅ Nouvelle rangée %d commencée\n\n", rangee_idx + 1);
+            
+            sleep(2);
+            system("clear");
+            Jeu_afficherTableau(&jeu->table);
+            sleep(1);
             continue;
         }
         
         Rangee *rangee = &jeu->table.rangees[rangee_idx];
         
         if (rangee->nbCartes >= 5) {
-            printf("\n🚨 6ème carte ! %s doit prendre la rangée !\n", joueur->nom);
+            int points = Rangee_getTetesBoeuf(rangee);
+            
+            printf("\n🚨 %s - 6ÈME CARTE SUR RANGÉE %d !\n", joueur->nom, rangee_idx + 1);
+            printf("   → Récolte la rangée et empoche %d tête(s) de boeuf 🐮\n\n", points);
+            
+            for (int j = 0; j < jeu->nbJoueurs; j++) {
+                if (!jeu->joueurs[j].is_bot) {
+                    snprintf(msg, sizeof(msg), "\n🚨 %s - 6ème carte sur rangée %d!\n   → Récolte la rangée et empoche %d tête(s) de boeuf 🐮\n", 
+                             joueur->nom, rangee_idx + 1, points);
+                    envoyer_message(jeu->joueurs[j].socket, msg);
+                }
+            }
+            
             Jeu_prendreRangee(joueur, rangee);
             Rangee_ajouterCarte(rangee, carte);
-            printf("✅ Nouvelle rangée %d commencée\n\n", rangee_idx + 1);
+            
+            sleep(2);
+            system("clear");
+            Jeu_afficherTableau(&jeu->table);
+            sleep(1);
         } else {
             Rangee_ajouterCarte(rangee, carte);
-            printf("✅ Carte placée sur rangée %d\n\n", rangee_idx + 1);
+            printf("✅ %s - Carte %d placée sur rangée %d\n\n", joueur->nom, carte.valeurNum, rangee_idx + 1);
+            
+            for (int j = 0; j < jeu->nbJoueurs; j++) {
+                if (!jeu->joueurs[j].is_bot) {
+                    snprintf(msg, sizeof(msg), "✅ %s - Carte %d placée sur rangée %d\n", 
+                             joueur->nom, carte.valeurNum, rangee_idx + 1);
+                    envoyer_message(jeu->joueurs[j].socket, msg);
+                }
+            }
         }
     }
     
     free(cartes_jouees);
     
+    system("clear");
+    printf("\n");
+    printf("══════════════════════════\n");
     printf("--- Fin du tour %d ---\n", jeu->tourActuel);
+    printf("══════════════════════════\n\n");
+    
     Jeu_afficherTableau(&jeu->table);
-    Jeu_afficherScores(&jeu);
+    Jeu_afficherScores(jeu);
+    
+    sleep(4);
+    system("clear");
+    
+    int all_empty = 1;
+    for (int i = 0; i < jeu->nbJoueurs; i++) {
+        if (jeu->joueurs[i].jeuCartes.nbCartes > 0) {
+            all_empty = 0;
+            break;
+        }
+    }
+    
+    if (all_empty && !Jeu_estTermine(jeu)) {
+        Jeu_reinitialiserManche(jeu);
+    }
 }
 
-void Jeu_appliquerTour(Jeu *jeu, Carte *cartes_jouees, int *indices_rangees) {
-    // Non utilisée en mode réseau
-    (void)jeu;
-    (void)cartes_jouees;
-    (void)indices_rangees;
-}
 
 int Jeu_estTermine(Jeu *jeu) {
     if (jeu == NULL) return 0;
-    return jeu->tourActuel >= NB_TOURS;
-}
-
-void Jeu_placerCarte(Rangee *rangee, Carte carte) {
-    if (rangee == NULL) return;
-    Rangee_ajouterCarte(rangee, carte);
-}
-
-void afficher_carte(Carte *carte) {
-    char *s = Carte_toString(carte);
-    if (s) {
-        printf("%s\n", s);
-        free(s);
+    
+    // Vérifier si un joueur a atteint 66 points
+    for (int i = 0; i < jeu->nbJoueurs; i++) {
+        if (jeu->joueurs[i].score >= POINTS_LIMITE) {
+            return 1;
+        }
     }
+    
+    // Vérifier si le deck est vide ET tous les joueurs n'ont plus de cartes
+    if (jeu->deck.nbCartes == 0) {
+        int all_empty = 1;
+        for (int i = 0; i < jeu->nbJoueurs; i++) {
+            if (jeu->joueurs[i].jeuCartes.nbCartes > 0) {
+                all_empty = 0;
+                break;
+            }
+        }
+        if (all_empty) return 1;
+    }
+    
+    return 0;
 }
 
 /* ============ AFFICHAGE ============ */
 
 void Jeu_afficherTableau(TableJeu *table) {
     if (table == NULL) return;
-
+    
     printf("\n┌─────────────────────────────────────┐\n");
-    printf("│       🎮 TABLEAU DE JEU 🎮          │\n");
+    printf("│ 🎮 TABLEAU DE JEU 🎮 │\n");
     printf("└─────────────────────────────────────┘\n\n");
     
     for (int i = 0; i < NB_RANGEES_JEU; i++) {
         Rangee *rangee = &table->rangees[i];
         int pts = Rangee_getTetesBoeuf(rangee);
-        
         printf("Rangée %d [%d 🐮]:\n", i + 1, pts);
         
         if (rangee->nbCartes == 0) {
-            printf("(vide)\n\n");
+            printf("(vide)\n");  // ✅ UN SEUL \n au lieu de \n\n
         } else {
             Collection c = Rangee_asCollection(rangee);
-            char *rangee_str = Collection_toString(&c, 0);  // 0 = PAS d'indices
+            char *rangee_str = Collection_toString(&c, 0);
             if (rangee_str) {
-                printf("%s\n", rangee_str);
+                printf("%s", rangee_str);  // ✅ Collection_toString() ajoute déjà les \n
                 free(rangee_str);
             }
         }
     }
 }
 
+
 void Jeu_afficherScores(Jeu *jeu) {
     if (jeu == NULL) return;
     
     printf("\n┌─────────────────────────────────────┐\n");
-    printf("│         📊 SCORES ACTUELS           │\n");
+    printf("│ 📊 SCORES ACTUELS │\n");
     printf("└─────────────────────────────────────┘\n");
     
     for (int i = 0; i < jeu->nbJoueurs; i++) {
-        printf("  %s : %d points\n", jeu->joueurs[i].nom, jeu->joueurs[i].score);
+        printf(" %s : %d points\n", jeu->joueurs[i].nom, jeu->joueurs[i].score);
     }
+    
     printf("\n");
 }
 
@@ -517,7 +748,6 @@ Joueur* Jeu_determinerGagnant(Jeu *jeu) {
     if (jeu == NULL || jeu->nbJoueurs <= 0) return NULL;
     
     Joueur *gagnant = &jeu->joueurs[0];
-    
     for (int i = 1; i < jeu->nbJoueurs; i++) {
         if (jeu->joueurs[i].score < gagnant->score) {
             gagnant = &jeu->joueurs[i];

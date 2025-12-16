@@ -35,24 +35,16 @@ void ServerComm_SendScores(Joueur *joueurs, int nb_joueurs);
 void ServerComm_AnnonceTurn(const char *joueur_nom, int num_tour);
 
 /**
- * Annoncer une carte jouee
- */
-void ServerComm_AnnonceCardPlayed(const char *joueur_nom, int carte_valeur, int rangee);
-
-/**
- * Annoncer la fin d'une manche
- */
-void ServerComm_AnnounceRoundEnd(int num_manche, Joueur *joueurs, int nb_joueurs);
-
-/**
  * Annoncer la fin de la partie
  */
 void ServerComm_AnnounceGameEnd(const char *gagnant_nom, int gagnant_score,
                                  Joueur *joueurs, int nb_joueurs);
 
+
 /**
- * Demander une carte a un joueur
+ * Fermer tous les clients et expulser tout le monde
  */
-int ServerComm_RequestCard(int client_index);
+void ServerComm_DisconnectAllClients(const char *reason);
+
 
 #endif
