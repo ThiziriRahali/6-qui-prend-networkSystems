@@ -66,8 +66,8 @@ run-client: $(CLIENT_EXEC)
 
 # Stats
 stats-shell:
-	@if [ -f "jeu.log" ]; then \
-		bash $(LOGS_DIR)/stats.sh jeu.log; \
+	@if [ -f "$(LOGS_DIR)/jeu.log" ]; then \
+		bash $(LOGS_DIR)/stats.sh $(LOGS_DIR)/jeu.log; \
 	else \
 		echo "❌ Fichier jeu.log introuvable. Jouez d'abord une partie!"; \
 	fi
