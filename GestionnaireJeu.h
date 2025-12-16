@@ -14,7 +14,6 @@ typedef struct {
     Collection colonnes[4];
 } GestionnaireJeu;
 
-/* "méthodes" */
 void GestionnaireJeu_Init(GestionnaireJeu *p, char *ip, int port);
 void GestionnaireJeu_AjouteJoueur(GestionnaireJeu *p, Joueur *j);
 
