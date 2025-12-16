@@ -11,7 +11,7 @@ SCRIPTS_DIR = scripts
 
 # Fichiers serveur (.c)
 SERVEUR_SOURCES = $(C_DIR)/Carte.c $(C_DIR)/Collection.c $(C_DIR)/Joueur.c \
-                  $(C_DIR)/GestionnaireJeu.c $(C_DIR)/jeu.c $(C_DIR)/logging.c \
+                  $(C_DIR)/jeu.c $(C_DIR)/logging.c \
                   $(C_DIR)/Serveur.c $(C_DIR)/server_communication.c $(C_DIR)/global.c
 
 # Fichiers client (.c)

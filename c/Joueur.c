@@ -1,4 +1,4 @@
-#include "../headers/global.h"
+#include "global.h"
 
 void Joueur_Init(Joueur *p, int x, char* y) {
     if (p == NULL || y == NULL) return;

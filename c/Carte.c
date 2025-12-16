@@ -1,4 +1,4 @@
-#include "../headers/global.h"
+#include "global.h"
 
 void Carte_Init(Carte *p, int num, int tete) {
     if(p == NULL) {
@@ -112,32 +112,5 @@ char* Carte_toString(Carte *p) {
         valeur_centree,
         etoiles_centrees);
 
-    return buffer;
-}
-
-char* Carte_toStringCache(Carte *p){
-    if (p == NULL) {
-        fprintf(stderr, "Erreur: pointeur Carte NULL dans Carte_toString\n");
-        exit(EXIT_FAILURE);
-    }
-
-    size_t size = 128;
-    char *buffer = malloc(size);
-    if (buffer == NULL) {
-        fprintf(stderr, "Erreur: échec de l'allocation mémoire dans Carte_toString\n");
-        exit(EXIT_FAILURE);
-    }
-    
-    snprintf(buffer, size,
-        "------------\n"
-        "|          |\n"
-        "|    %s    |\n"
-        "|          |\n"
-        "|    %s    |\n"
-        "|          |\n"
-        "------------",
-        "??",
-        "??");
-    
     return buffer;
 }

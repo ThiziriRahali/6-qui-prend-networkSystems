@@ -1,10 +1,5 @@
-#ifndef STRUCTURES_H
-#define STRUCTURES_H
-
+#include "global.h"
 #include "defines.h"
-#include <pthread.h>
-#include <netinet/in.h>
-#include <stdio.h>
 
 typedef struct {
     int valeurNum;
@@ -15,6 +10,7 @@ typedef struct {
     Carte *cartes;
     int nbCartes;
     int maxCartes;
+    
 } Collection;
 
 typedef struct {
@@ -27,31 +23,23 @@ typedef struct {
     int id;
 } Joueur;
 
-typedef struct {
-    char ip[MAX_SIZE];
-    int port;
-    Joueur listeJoueurs[10];
-    Collection *carteNonDistribuees;
-    Collection *carteDejaDistribuees;
-    Collection colonnes[4];
-} GestionnaireJeu;
 
 typedef struct {
-    Carte cartes[NB_CARTES_MAX_RANGEE];
-    int nbCartes;
+    Carte cartes[NB_CARTES_MAX_RANGEE];  
+    int nbCartes;                        
 } Rangee;
 
 typedef struct {
-    Rangee rangees[NB_RANGEES_JEU];
-    int tour;
+    Rangee rangees[NB_RANGEES_JEU];     
+    int tour;                             
 } TableJeu;
 
 typedef struct {
-    Joueur *joueurs;
-    int nbJoueurs;
-    TableJeu table;
-    Collection deck;
-    int tourActuel;
+    Joueur *joueurs;                     
+    int nbJoueurs;                       
+    TableJeu table;                      
+    Collection deck;                     
+    int tourActuel;                      
 } Jeu;
 
 typedef struct {
@@ -65,5 +53,3 @@ typedef struct {
     char nom[MAX_NAME_LEN];
     int is_bot;
 } client_t;
-
-#endif

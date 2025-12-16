@@ -1,5 +1,4 @@
-#ifndef METHODES_H
-#define METHODES_H
+#include "global.h"
 
 void *thread_reception(void *arg);
 void *thread_envoi(void *arg);
@@ -9,7 +8,6 @@ void Carte_InitNum(Carte *p, int num);
 int Carte_getValeurNum(Carte *p);
 int Carte_getValeurTete(Carte *p);
 char* Carte_toString(Carte *p);
-char* Carte_toStringCache(Carte *p);
 
 void Collection_Init(Collection *p, Carte *cartes, int nbCartes, int maxCartes);
 Carte* Collection_getCartes(Collection *p);
@@ -22,10 +20,6 @@ int Collection_getTetesBoeufTotal(Collection *p);
 int Collectionn_isPleine(Collection *p);
 char* Collection_toString(Collection *p, int afficher_indices);
 int Collection_getScore(Collection *p);
-
-void GestionnaireJeu_Init(GestionnaireJeu *p, char *ip, int port);
-void GestionnaireJeu_AjouteJoueur(GestionnaireJeu *p, Joueur *j);
-int GestionnaireJeu_poserCarte(GestionnaireJeu *p, int colonne, Carte *c);
 
 void send_error(const char* message);
 void send_info(const char* message);
@@ -52,6 +46,7 @@ void Joueur_retirerCarte(Joueur *p, int i);
 void Joueur_updateScore(Joueur *p, Collection *c);
 
 Logger* Logger_Init(void);
+
 void Logger_Close(Logger *logger);
 void Logger_JoueurConnecte(Logger *logger, const char *nom, const char *ip, int port);
 void Logger_PartieCommencee(Logger *logger, int nbJoueurs, const char **nomsJoueurs);
@@ -68,12 +63,5 @@ void ServerComm_AnnonceTurn(const char *joueur_nom, int num_tour);
 void ServerComm_AnnounceGameEnd(const char *gagnant_nom, int gagnant_score, Joueur *joueurs, int nb_joueurs);
 void ServerComm_DisconnectAllClients(const char *reason);
 
-int initialiser_serveur(const char *adresse_ip, int port);
-int accepter_connexion(int serveur_socket);
-char* recevoir_nom_client(int client_socket);
-
-void *client_handler(void *arg);
 void *lancer_partie(void *arg);
 void *timer_thread(void *arg);
-
-#endif

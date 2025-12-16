@@ -1,4 +1,5 @@
-#include "../headers/global.h"
+#include "global.h"
+
 
 int sock_global = -1;
 int partie_terminee = 0;
@@ -7,7 +8,7 @@ pthread_mutex_t mutex_termine = PTHREAD_MUTEX_INITIALIZER;
 int main(int argc, char *argv[]) {
     if (argc != 4) {
         fprintf(stderr, "Usage: %s <adresse_ip_serveur> <port_serveur> <nom_joueur>\n", argv[0]);
-        fprintf(stderr, "Exemple: %s 127.0.0.1 4242 Alice\n", argv[0]);
+        fprintf(stderr, "Exemple: %s 127.0.0.1 4242 Mohammed\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -21,7 +22,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (strlen(nom_joueur) == 0 || strlen(nom_joueur) > 31) {
-        fprintf(stderr, "Nom de joueur invalide (1-31 caractères)\n");
+        fprintf(stderr, "Nom de joueur invalide (1-31 caract\u00e8res)\n");
         return EXIT_FAILURE;
     }
 
@@ -52,7 +53,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    printf("🎮 Connecté au serveur %s:%d\n", server_ip, server_port);
+    printf("🎮 Connect\u00e9 au serveur %s:%d\n", server_ip, server_port);
     printf("Envoi du nom de joueur: %s\n", nom_joueur);
 
     ssize_t sent = send(sock, nom_joueur, strlen(nom_joueur), 0);
@@ -62,7 +63,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    printf("En attente du démarrage de la partie...\n\n");
+    printf("En attente du d\u00e9marrage de la partie...\n\n");
 
     pthread_t tid_recv, tid_send;
     
@@ -98,7 +99,7 @@ void *thread_reception(void *arg) {
     while (1) {
         ssize_t n = recv(sock_global, buffer, sizeof(buffer) - 1, 0);
         if (n <= 0) {
-            printf("\nDéconnexion du serveur.\n");
+            printf("\nD\u00e9connexion du serveur.\n");
             pthread_mutex_lock(&mutex_termine);
             partie_terminee = 1;
             pthread_mutex_unlock(&mutex_termine);

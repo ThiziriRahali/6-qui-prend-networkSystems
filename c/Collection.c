@@ -1,4 +1,4 @@
-#include "../headers/global.h"
+#include "global.h"
 
 void Collection_Init(Collection *p, Carte *cartes, int nbCartes, int maxCartes) {
     p->cartes = cartes;
@@ -140,7 +140,7 @@ char* Collection_toString(Collection *p, int afficher_indices) {
     return buffer;
 }
 
- int Collection_getScore(Collection *p){
+int Collection_getScore(Collection *p){
     int somme = 0;
     for(int i = 0 ; i < Collection_getNbCartes(p) ; i++){
         somme += Carte_getValeurTete(Collection_getCarte(p, i));

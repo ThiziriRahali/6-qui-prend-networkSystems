@@ -17,9 +17,4 @@
 #include "methodes.h"
 #include "defines.h"
 
-extern Logger *g_logger;
-extern client_t *clients_connectes[MAX_JOUEURS];
-extern int nb_clients;
-extern int partie_en_cours;
-
 #endif
