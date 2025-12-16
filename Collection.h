@@ -4,13 +4,12 @@
 #include "Carte.h"
 
 typedef struct {
-    Carte *cartes;      // Pointeur vers le tableau de cartes
-    int nbCartes;       // Nombre de cartes dans la collection
-    int maxCartes;    // Capacité maximale de la collection
+    Carte *cartes;
+    int nbCartes;
+    int maxCartes;
     
 } Collection;
 
-/* "éthodes" */
 void Collection_Init(Collection *p, Carte *cartes, int nbCartes, int maxCartes);
 Carte* Collection_getCartes(Collection *p);
 Carte* Collection_getCarte(Collection *p, int index);
