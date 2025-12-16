@@ -1,4 +1,4 @@
-#include "global.h"
+#include "../headers/global.h"
 
 
 int sock_global = -1;
@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1) {
-        perror("socket");
+        send_error("socket");
         return EXIT_FAILURE;
     }
 
@@ -42,13 +42,13 @@ int main(int argc, char *argv[]) {
     serv_addr.sin_port = htons(server_port);
 
     if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0) {
-        perror("inet_pton");
+        send_error("inet_pton");
         close(sock);
         return EXIT_FAILURE;
     }
 
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1) {
-        perror("connect");
+        send_error("connect");
         close(sock);
         return EXIT_FAILURE;
     }
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 
     ssize_t sent = send(sock, nom_joueur, strlen(nom_joueur), 0);
     if (sent == -1) {
-        perror("send");
+        send_error("send");
         close(sock);
         return EXIT_FAILURE;
     }
@@ -68,13 +68,13 @@ int main(int argc, char *argv[]) {
     pthread_t tid_recv, tid_send;
     
     if (pthread_create(&tid_recv, NULL, thread_reception, NULL) != 0) {
-        perror("pthread_create recv");
+        send_error("pthread_create recv");
         close(sock);
         return EXIT_FAILURE;
     }
     
     if (pthread_create(&tid_send, NULL, thread_envoi, NULL) != 0) {
-        perror("pthread_create send");
+        send_error("pthread_create send");
         close(sock);
         return EXIT_FAILURE;
     }
@@ -129,7 +129,7 @@ void *thread_envoi(void *arg) {
         if (fgets(input, sizeof(input), stdin) != NULL) {
             ssize_t sent = send(sock_global, input, strlen(input), 0);
             if (sent == -1) {
-                perror("send");
+                send_error("send");
                 break;
             }
         }

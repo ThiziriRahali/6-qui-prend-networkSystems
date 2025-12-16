@@ -1,4 +1,4 @@
-#include "global.h"
+#include "../headers/global.h"
 
 void Collection_Init(Collection *p, Carte *cartes, int nbCartes, int maxCartes) {
     p->cartes = cartes;

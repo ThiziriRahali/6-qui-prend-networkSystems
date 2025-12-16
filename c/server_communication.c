@@ -1,4 +1,4 @@
-#include "global.h"
+#include "../headers/global.h"
 
 extern int nb_clients;
 

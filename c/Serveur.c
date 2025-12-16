@@ -1,4 +1,4 @@
-#include "global.h"
+#include "../headers/global.h"
 
 client_t *clients_connectes[MAX_JOUEURS];
 int nb_clients = 0;
@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 
     server_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (server_sock == -1) {
-        perror("socket");
+        send_error("socket");
         Logger_Close(g_logger);
         return EXIT_FAILURE;
     }
@@ -59,21 +59,21 @@ int main(int argc, char *argv[]) {
     server_addr.sin_port = htons(port);
     
     if (inet_pton(AF_INET, ip_str, &server_addr.sin_addr) <= 0) {
-        perror("inet_pton");
+        send_error("inet_pton");
         close(server_sock);
         Logger_Close(g_logger);
         return EXIT_FAILURE;
     }
 
     if (bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
-        perror("bind");
+        send_error("bind");
         close(server_sock);
         Logger_Close(g_logger);
         return EXIT_FAILURE;
     }
 
     if (listen(server_sock, BACKLOG) == -1) {
-        perror("listen");
+        send_error("listen");
         close(server_sock);
         Logger_Close(g_logger);
         return EXIT_FAILURE;
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
     while (1) {
         client_t *client = malloc(sizeof(client_t));
         if (!client) {
-            perror("malloc");
+            send_error("malloc");
             continue;
         }
 
@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
                               (struct sockaddr *)&client->addr,
                               &addrlen);
         if (client->sock == -1) {
-            perror("accept");
+            send_error("accept");
             free(client);
             continue;
         }
@@ -183,7 +183,7 @@ void *timer_thread(void *arg) {
         elapsed = time(NULL) - timer_start;
         remaining = TIMEOUT_TIMER - (int)elapsed;
         
-        if (remaining > 0 && remaining % 10 == 0) {
+        if (remaining > 0 && remaining % 5 == 0) {
             printf("%d secondes avant lancement auto...\n", remaining);
         }
     }

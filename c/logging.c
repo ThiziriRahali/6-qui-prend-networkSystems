@@ -1,17 +1,16 @@
-
-#include "global.h"
+#include "../headers/global.h"
 
 
 Logger* Logger_Init(void) {
     Logger *logger = malloc(sizeof(Logger));
     if (!logger) {
-        perror("malloc Logger");
+        send_error("malloc Logger");
         return NULL;
     }
 
     logger->file = fopen(LOG_FILE, "a");
     if (!logger->file) {
-        perror("fopen");
+        send_error("fopen");
         free(logger);
         return NULL;
     }

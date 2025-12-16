@@ -1,4 +1,4 @@
-#include "global.h"
+#include "../headers/global.h"
 
 
 static int envoyer_message(int socket, const char *message) {
@@ -233,7 +233,7 @@ int Jeu_choisirRangee(Joueur *joueur, TableJeu *table) {
     }
     
     char msg[4096];
-    snprintf(msg, sizeof(msg), "\n⚠️ Ta carte est trop petite ! Choisis une rangée à prendre (1-4):\n\n");
+    snprintf(msg, sizeof(msg), "\n⚠️ Ta carte est trop petite ! Choisis une rangée à prendre (1-%d):\n\n", NB_RANGEES_JEU);
     envoyer_message(joueur->socket, msg);
     
     for (int i = 0; i < NB_RANGEES_JEU; i++) {
@@ -256,7 +256,7 @@ int Jeu_choisirRangee(Joueur *joueur, TableJeu *table) {
         }
     }
     
-    snprintf(msg, sizeof(msg), "\nTon choix (1-4): ");
+    snprintf(msg, sizeof(msg), "\nTon choix (1-%d): ", NB_RANGEES_JEU);
     envoyer_message(joueur->socket, msg);
     
     char buffer[32];
@@ -272,7 +272,7 @@ int Jeu_choisirRangee(Joueur *joueur, TableJeu *table) {
         
         choix = atoi(buffer);
         if (choix < 1 || choix > 4) {
-            snprintf(msg, sizeof(msg), "Choix invalide. Réessaie (1-4): ");
+            snprintf(msg, sizeof(msg), "Choix invalide. Réessaie (1-%d): ", NB_RANGEES_JEU);
             envoyer_message(joueur->socket, msg);
         }
     }
@@ -407,11 +407,6 @@ void Jeu_jouerTour(Jeu *jeu) {
     printf("══════════════════════════\n\n");
     
     char msg[4096];
-    
-    typedef struct {
-        Carte carte;
-        int joueur_id;
-    } CarteJouee;
     
     CarteJouee *cartes_jouees = malloc(jeu->nbJoueurs * sizeof(CarteJouee));
     if (!cartes_jouees) {

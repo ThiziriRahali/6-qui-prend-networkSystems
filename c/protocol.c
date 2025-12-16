@@ -1,4 +1,4 @@
-#include "global.h"
+#include "../headers/global.h"
 
 static inline int Protocol_SendMessage(int sock, const char *format, ...) {
     if (sock == -1) return -1;
@@ -13,7 +13,7 @@ static inline int Protocol_SendMessage(int sock, const char *format, ...) {
 
     ssize_t sent = send(sock, buffer, strlen(buffer), 0);
     if (sent == -1) {
-        perror("send");
+        send_error("send");
         return -1;
     }
 

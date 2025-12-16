@@ -53,3 +53,8 @@ typedef struct {
     char nom[MAX_NAME_LEN];
     int is_bot;
 } client_t;
+
+typedef struct {
+    Carte carte;
+    int joueur_id;
+} CarteJouee;

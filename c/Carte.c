@@ -1,4 +1,4 @@
-#include "global.h"
+#include "../headers/global.h"
 
 void Carte_Init(Carte *p, int num, int tete) {
     if(p == NULL) {

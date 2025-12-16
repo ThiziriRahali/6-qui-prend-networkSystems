@@ -1,4 +1,4 @@
-#include "global.h"
+#include "../headers/global.h"
 
 void send_error(const char* message) {
     fprintf(stderr, "Error: %s\n", message);
