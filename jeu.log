@@ -28,3 +28,53 @@ Classement final:
   1. Alice: 0 points
   2. Bob: 0 points
 
+
+=== NOUVEAU JEU - Mon Dec 15 19:25:54 2025
+[19:26:30] [CONNEXION] Joueur 'Titi' depuis 127.0.0.1:46240
+[19:27:00] [CONNEXION] Joueur 'Bot1' depuis 127.0.0.1:0
+
+--- DÉBUT DE PARTIE ---
+[PARTIE] Lancement avec 2 joueurs: Titi, Bot1
+
+=== NOUVEAU JEU - Mon Dec 15 19:27:38 2025
+[19:27:52] [CONNEXION] Joueur 'jerem' depuis 127.0.0.1:56700
+[19:28:03] [CONNEXION] Joueur 'Titi' depuis 127.0.0.1:52566
+
+--- DÉBUT DE PARTIE ---
+[PARTIE] Lancement avec 2 joueurs: jerem, Titi
+
+--- FIN DE PARTIE ---
+[GAGNANT] jerem avec 0 points!
+
+Classement final:
+  1. jerem: 0 points
+  2. Titi: 0 points
+
+[19:29:11] [CONNEXION] Joueur 't' depuis 127.0.0.1:48816
+[19:29:41] [CONNEXION] Joueur 'Bot1' depuis 127.0.0.1:0
+
+--- DÉBUT DE PARTIE ---
+[PARTIE] Lancement avec 2 joueurs: t, Bot1
+
+--- FIN DE PARTIE ---
+[GAGNANT] t avec 0 points!
+
+Classement final:
+  1. t: 0 points
+  2. Bot1: 0 points
+
+
+=== NOUVEAU JEU - Tue Dec 16 10:33:40 2025
+[10:33:56] [CONNEXION] Joueur 'jerem' depuis 127.0.0.1:53638
+[10:34:04] [CONNEXION] Joueur 't' depuis 127.0.0.1:40466
+
+--- DÉBUT DE PARTIE ---
+[PARTIE] Lancement avec 2 joueurs: jerem, t
+
+--- FIN DE PARTIE ---
+[GAGNANT] jerem avec 0 points!
+
+Classement final:
+  1. jerem: 0 points
+  2. t: 0 points
+

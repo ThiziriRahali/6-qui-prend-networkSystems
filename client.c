@@ -66,6 +66,20 @@ int main(int argc, char *argv[]) {
         close(sock);
         return EXIT_FAILURE;
     }
+    void *input_thread(void *arg) {
+        int sock = *(int *)arg;
+        char line[256];
+
+        while (fgets(line, sizeof(line), stdin) != NULL) {
+            // envoyer ce que le joueur tape au serveur
+            if (send(sock, line, strlen(line), 0) <= 0) {
+                perror("send");
+                break;
+            }
+        }
+        return NULL;
+    }
+
 
     printf("En attente du démarrage de la partie...\n\n");
 
@@ -80,7 +94,7 @@ int main(int argc, char *argv[]) {
         buffer[n] = '\0';
         printf("%s", buffer);
         fflush(stdout);
-    }
+    }                             
 
     close(sock);
     printf("\nFin de la connexion.\n");
