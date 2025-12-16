@@ -1,28 +1,7 @@
-// server_communication.c : gestion des communications serveur <-> clients
+#include "global.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <signal.h>
-
-#include "protocol.h"
-#include "Joueur.h"
-#include "jeu.h"
-#include "Collection.h"
-
-
-// Variables externes du serveur (definis dans Serveur.c)
 extern int nb_clients;
-extern int MAX_JOUEURS;
-typedef struct {
-    int sock;
-    struct sockaddr_in addr;
-    char nom[32];
-    int is_bot;
-} client_t;
+
 extern client_t *clients_connectes[10];
 
 /**

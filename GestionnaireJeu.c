@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "GestionnaireJeu.h"
 #include "global.h"
-
 
 void GestionnaireJeu_Init(GestionnaireJeu *p, char *ip, int port){
     p->port = port;

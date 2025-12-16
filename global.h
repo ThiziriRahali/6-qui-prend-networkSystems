@@ -3,11 +3,18 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+#include <limits.h>
+#include <time.h>
+#include <sys/socket.h>
+#include <stdarg.h>
+#include <errno.h>
 
-// Function to handle errors
-void send_error(const char* message);
-
-// Function to display info messages
-void send_info(const char* message);
+#include "structures.h"
+#include "methodes.h"
+#include "defines.h"
 
 #endif

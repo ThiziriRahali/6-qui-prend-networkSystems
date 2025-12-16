@@ -1,13 +1,5 @@
+#include "global.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <pthread.h>
-
-void *thread_reception(void *arg);
-void *thread_envoi(void *arg);
 
 int sock_global = -1;
 int partie_terminee = 0;
@@ -16,7 +8,7 @@ pthread_mutex_t mutex_termine = PTHREAD_MUTEX_INITIALIZER;
 int main(int argc, char *argv[]) {
     if (argc != 4) {
         fprintf(stderr, "Usage: %s <adresse_ip_serveur> <port_serveur> <nom_joueur>\n", argv[0]);
-        fprintf(stderr, "Exemple: %s 127.0.0.1 4242 Alice\n", argv[0]);
+        fprintf(stderr, "Exemple: %s 127.0.0.1 4242 Mohammed\n", argv[0]);
         return EXIT_FAILURE;
     }
 

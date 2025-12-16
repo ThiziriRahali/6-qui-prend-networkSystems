@@ -1,8 +1,4 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include "Collection.h"
 #include "global.h"
-#include <string.h> 
 
 void Collection_Init(Collection *p, Carte *cartes, int nbCartes, int maxCartes) {
     p->cartes = cartes;

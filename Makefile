@@ -1,78 +1,65 @@
+# Compilateur et flags
 CC = gcc
-CFLAGS = -Wall -Wextra -Wpedantic -std=c11 -g -MMD -MP
+CFLAGS = -Wall -Wextra -Wpedantic -std=c11 -g
 LDFLAGS = -pthread
 
-# ========================================
-# Fichiers sources
-# ========================================
+# Fichiers serveur
+# Fichiers serveur
+SERVEUR_SOURCES = Carte.c Collection.c Joueur.c GestionnaireJeu.c jeu.c logging.c \
+                  Serveur.c server_communication.c global.c
 
-# Fichiers sources COMMUNS (métier du jeu, pas de dépendances serveur)
-SRCCOMMON = Carte.c Collection.c Joueur.c GestionnaireJeu.c global.c jeu.c logging.c
 
-# Fichiers sources SPÉCIFIQUES AU SERVEUR
-SRCSERVER = Serveur.c client_handler.c server_communication.c
 
-# Fichiers sources SPÉCIFIQUES AU CLIENT
-SRCCLIENT = client.c
+# Fichiers client
+CLIENT_SOURCES = client.c
 
-# ========================================
-# Objets compilés
-# ========================================
+SERVEUR_OBJECTS = $(SERVEUR_SOURCES:.c=.o)
+CLIENT_OBJECTS = $(CLIENT_SOURCES:.c=.o)
 
-OBJCOMMON = $(SRCCOMMON:.c=.o)
-OBJSERVER = $(SRCSERVER:.c=.o)
-OBJCLIENT = $(SRCCLIENT:.c=.o)
+SERVEUR_EXEC = serveur
+CLIENT_EXEC = client
 
-# Fichiers de dépendances
-DEPS = $(OBJCOMMON:.o=.d) $(OBJSERVER:.o=.d) $(OBJCLIENT:.o=.d)
+# Headers
+HEADERS = defines.h structures.h methodes.h global.h Carte.h Collection.h \
+          Joueur.h GestionnaireJeu.h jeu.h logging.h protocol.h \
+          server_communication.h
 
-# Cibles finales
-TARGETS = serveur client
+# Cibles principales
+all: $(SERVEUR_EXEC) $(CLIENT_EXEC)
 
-# ========================================
-# Règles de compilation
-# ========================================
-
-all: $(TARGETS) scripts
-
-scripts:
-	@chmod +x stats.sh 2>/dev/null; true
-
-# SERVEUR : inclut objets communs + serveur + communication
-serveur: $(OBJCOMMON) $(OBJSERVER)
+$(SERVEUR_EXEC): $(SERVEUR_OBJECTS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
+	@echo "✅ Serveur compilé: $@"
 
-# CLIENT : inclut UNIQUEMENT objets communs + client (PAS server_communication.o)
-client: $(OBJCOMMON) $(OBJCLIENT)
+$(CLIENT_EXEC): $(CLIENT_OBJECTS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
+	@echo "✅ Client compilé: $@"
 
-# Compilation générique .c → .o
-%.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+%.o: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -c $< -o $@
+	@echo "📦 Compilé: $<"
 
-# Inclusion des fichiers de dépendances
--include $(DEPS)
-
-# ========================================
-# Cibles auxiliaires
-# ========================================
-
-stats-shell:
-	@if [ -f jeu.log ]; then \
-		./stats.sh jeu.log; \
-	else \
-		echo "❌ Erreur: fichier jeu.log non trouvé"; \
-		echo "💡 Remarque: Joue quelques parties pour générer jeu.log"; \
-	fi
-
+# Nettoyage
 clean:
-	rm -f *.o *.d $(TARGETS)
+	rm -f $(SERVEUR_OBJECTS) $(CLIENT_OBJECTS) $(SERVEUR_EXEC) $(CLIENT_EXEC)
+	@echo "🧹 Nettoyage effectué"
 
-distclean: clean
-	rm -f jeu.log
+# Recompile
+rebuild: clean all
 
-# ========================================
-# Déclaration des cibles non-fichier
-# ========================================
+# Exécuter
+run-serveur: $(SERVEUR_EXEC)
+	@echo "🚀 Lancement du serveur..."
+	./$(SERVEUR_EXEC) 127.0.0.1 4242 4
 
-.PHONY: all clean distclean scripts stats-shell
+run-client: $(CLIENT_EXEC)
+	@echo "🚀 Lancement du client..."
+	./$(CLIENT_EXEC) 127.0.0.1 4242 Alice
+
+# Phony targets
+.PHONY: all clean rebuild run-serveur run-client info
+
+# Debug
+info:
+	@echo "Serveur sources: $(SERVEUR_SOURCES)"
+	@echo "Client sources: $(CLIENT_SOURCES)"

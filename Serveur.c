@@ -1,33 +1,4 @@
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <arpa/inet.h>
-#include <pthread.h>
-#include <time.h>
-#include "Joueur.h"
-#include "jeu.h"
-#include "logging.h"
-#include "server_communication.h"
-
-#define BACKLOG 10
-#define MAX_NAME_LEN 32
-#define MIN_JOUEURS 2
-#define MAX_JOUEURS 10
-#define TIMEOUT_TIMER 30
-
-void *client_handler(void *arg);
-void *lancer_partie(void *arg);
-void *timer_thread(void *arg);
-
-typedef struct {
-    int sock;
-    struct sockaddr_in addr;
-    char nom[MAX_NAME_LEN];
-    int is_bot;
-} client_t;
+#include "global.h"
 
 client_t *clients_connectes[MAX_JOUEURS];
 int nb_clients = 0;

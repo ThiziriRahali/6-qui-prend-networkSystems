@@ -1,12 +1,4 @@
-#include "jeu.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <limits.h>
-#include <time.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include "server_communication.h"
+#include "global.h"
 
 /* ============ FONCTIONS RÉSEAU ============ */
 

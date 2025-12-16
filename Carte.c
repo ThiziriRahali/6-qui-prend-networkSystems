@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "Carte.h"
+#include "global.h"
 
 void Carte_Init(Carte *p, int num, int tete) {
     if(p == NULL) {

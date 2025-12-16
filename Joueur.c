@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "Joueur.h"
-#include "Collection.h"
+#include "global.h"
 
 void Joueur_Init(Joueur *p, int x, char* y) {
     if (p == NULL || y == NULL) return;
